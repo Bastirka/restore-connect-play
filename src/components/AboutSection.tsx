@@ -1,3 +1,4 @@
+/// <reference types="google.maps" />
 import { useContext, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Star, Users, Award } from "lucide-react";
