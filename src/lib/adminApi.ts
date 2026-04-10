@@ -16,7 +16,7 @@ async function adminFetch<T>(path: string, options?: RequestInit): Promise<T> {
     const body = await res.text().catch(() => "");
     throw new Error(`API error ${res.status}: ${body}`);
   }
-  return res.json();
+  return res.json() as Promise<T>;
 }
 
 export class AuthError extends Error {
@@ -40,8 +40,20 @@ export interface ApiMenuItem {
   sortOrder: number;
 }
 
+function unwrapArray<T>(data: unknown, ...keys: string[]): T[] {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === "object") {
+    for (const key of keys) {
+      if (Array.isArray((data as Record<string, unknown>)[key])) {
+        return (data as Record<string, unknown>)[key] as T[];
+      }
+    }
+  }
+  return [];
+}
+
 export const menuApi = {
-  list: () => adminFetch<ApiMenuItem[]>("/admin/menu"),
+  list: async () => unwrapArray<ApiMenuItem>(await adminFetch<unknown>("/admin/menu"), "items", "menu", "data"),
   create: (item: Omit<ApiMenuItem, "id">) =>
     adminFetch<ApiMenuItem>("/admin/menu", { method: "POST", body: JSON.stringify(item) }),
   update: (id: string, item: Partial<ApiMenuItem>) =>
@@ -60,7 +72,7 @@ export interface ApiHours {
 }
 
 export const hoursApi = {
-  list: () => adminFetch<ApiHours[]>("/admin/hours"),
+  list: async () => unwrapArray<ApiHours>(await adminFetch<unknown>("/admin/hours"), "hours", "items", "data"),
   update: (hours: ApiHours[]) =>
     adminFetch<ApiHours[]>("/admin/hours", { method: "POST", body: JSON.stringify(hours) }),
 };
@@ -80,7 +92,7 @@ export interface ApiReservation {
 }
 
 export const reservationsApi = {
-  list: () => adminFetch<ApiReservation[]>("/admin/reservations"),
+  list: async () => unwrapArray<ApiReservation>(await adminFetch<unknown>("/admin/reservations"), "reservations", "items", "data"),
   updateStatus: (id: string, status: ApiReservation["status"]) =>
     adminFetch<ApiReservation>(`/admin/reservations/${id}`, {
       method: "PUT",
