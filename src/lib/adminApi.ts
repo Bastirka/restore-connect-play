@@ -72,7 +72,7 @@ export interface ApiHours {
 }
 
 export const hoursApi = {
-  list: () => adminFetch<ApiHours[]>("/admin/hours"),
+  list: async () => unwrapArray<ApiHours>(await adminFetch<unknown>("/admin/hours"), "hours", "items", "data"),
   update: (hours: ApiHours[]) =>
     adminFetch<ApiHours[]>("/admin/hours", { method: "POST", body: JSON.stringify(hours) }),
 };
