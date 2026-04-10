@@ -1,14 +1,53 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UtensilsCrossed, CalendarCheck, Star, ImageIcon } from "lucide-react";
+import { UtensilsCrossed, CalendarCheck, Clock, Loader2 } from "lucide-react";
+import { menuApi, hoursApi, reservationsApi, AuthError } from "@/lib/adminApi";
 
-const stats = [
-  { label: "Menu Items", value: "42", icon: UtensilsCrossed },
-  { label: "Reservations Today", value: "8", icon: CalendarCheck },
-  { label: "Active Specials", value: "2", icon: Star },
-  { label: "Images", value: "15", icon: ImageIcon },
-];
+export default function AdminDashboard({ onAuthError }: { onAuthError?: () => void }) {
+  const [loading, setLoading] = useState(true);
+  const [menuCount, setMenuCount] = useState(0);
+  const [reservationCount, setReservationCount] = useState(0);
+  const [todayReservations, setTodayReservations] = useState(0);
+  const [openDays, setOpenDays] = useState(0);
 
-export default function AdminDashboard() {
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const [menu, reservations, hours] = await Promise.all([
+          menuApi.list().catch(() => []),
+          reservationsApi.list().catch(() => []),
+          hoursApi.list().catch(() => []),
+        ]);
+        setMenuCount(menu.length);
+        setReservationCount(reservations.length);
+        const today = new Date().toISOString().slice(0, 10);
+        setTodayReservations(reservations.filter((r) => r.date === today).length);
+        setOpenDays(hours.filter((h) => !h.closed).length);
+      } catch (err) {
+        if (err instanceof AuthError) onAuthError?.();
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, [onAuthError]);
+
+  const stats = [
+    { label: "Menu Items", value: menuCount, icon: UtensilsCrossed },
+    { label: "Reservations Today", value: todayReservations, icon: CalendarCheck },
+    { label: "Total Reservations", value: reservationCount, icon: CalendarCheck },
+    { label: "Open Days", value: openDays, icon: Clock },
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16 text-neutral-400">
+        <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading dashboard…
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -24,11 +63,6 @@ export default function AdminDashboard() {
           </Card>
         ))}
       </div>
-      <Card className="border-neutral-800 bg-neutral-900">
-        <CardContent className="p-6 text-center text-neutral-500">
-          <p>Dashboard analytics and quick actions will be available after backend integration.</p>
-        </CardContent>
-      </Card>
     </div>
   );
 }
