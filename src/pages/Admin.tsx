@@ -38,7 +38,7 @@ export default function Admin() {
   const handleAuthError = () => setAuthed(false);
 
   const content: Record<AdminView, React.ReactNode> = {
-    dashboard: <AdminDashboard />,
+    dashboard: <AdminDashboard onAuthError={handleAuthError} />,
     menu: <MenuEditor onAuthError={handleAuthError} />,
     specials: <SpecialsEditor />,
     hours: <HoursEditor onAuthError={handleAuthError} />,
