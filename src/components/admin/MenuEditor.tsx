@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -9,25 +9,39 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Pencil, Trash2, Plus, Search } from "lucide-react";
+import { Pencil, Trash2, Plus, Search, Loader2, RefreshCw } from "lucide-react";
+import { menuApi, AuthError } from "@/lib/adminApi";
 import type { AdminMenuItem } from "@/types/admin";
 
 const CATEGORIES = ["kebabi", "burgeri", "pide", "salads", "vegetarian", "kids", "dzerieni", "deserti"];
 
-const MOCK_ITEMS: AdminMenuItem[] = [
-  { id: "1", category: "kebabi", groupName: "Adana Kebab", variantName: "Standard", description: "Spicy lamb kebab", price: "12.90", image: "", active: true, sortOrder: 1 },
-  { id: "2", category: "burgeri", groupName: "Classic Burger", variantName: "Beef", description: "Juicy beef burger", price: "9.50", image: "", active: true, sortOrder: 2 },
-  { id: "3", category: "pide", groupName: "Cheese Pide", variantName: "", description: "Turkish flatbread with cheese", price: "8.90", image: "", active: false, sortOrder: 3 },
-];
-
 const emptyItem: AdminMenuItem = { id: "", category: "kebabi", groupName: "", variantName: "", description: "", price: "", image: "", active: true, sortOrder: 0 };
 
-export default function MenuEditor() {
-  const [items, setItems] = useState<AdminMenuItem[]>(MOCK_ITEMS);
+export default function MenuEditor({ onAuthError }: { onAuthError?: () => void }) {
+  const [items, setItems] = useState<AdminMenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<AdminMenuItem>(emptyItem);
+
+  const fetchItems = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const data = await menuApi.list();
+      setItems(data);
+    } catch (err) {
+      if (err instanceof AuthError) { onAuthError?.(); return; }
+      setError(err instanceof Error ? err.message : "Failed to load menu");
+    } finally {
+      setLoading(false);
+    }
+  }, [onAuthError]);
+
+  useEffect(() => { fetchItems(); }, [fetchItems]);
 
   const filtered = items.filter((i) => {
     const matchSearch = !search || `${i.groupName} ${i.variantName} ${i.description}`.toLowerCase().includes(search.toLowerCase());
@@ -35,21 +49,67 @@ export default function MenuEditor() {
     return matchSearch && matchCat;
   });
 
-  const openNew = () => { setEditing({ ...emptyItem, id: crypto.randomUUID(), sortOrder: items.length + 1 }); setDialogOpen(true); };
+  const openNew = () => { setEditing({ ...emptyItem, id: "", sortOrder: items.length + 1 }); setDialogOpen(true); };
   const openEdit = (item: AdminMenuItem) => { setEditing({ ...item }); setDialogOpen(true); };
-  const save = () => {
-    setItems((prev) => {
-      const idx = prev.findIndex((i) => i.id === editing.id);
-      if (idx >= 0) { const next = [...prev]; next[idx] = editing; return next; }
-      return [...prev, editing];
-    });
-    setDialogOpen(false);
+
+  const save = async () => {
+    try {
+      setSaving(true);
+      const isNew = !editing.id || !items.find((i) => i.id === editing.id);
+      if (isNew) {
+        const { id: _, ...rest } = editing;
+        await menuApi.create(rest);
+      } else {
+        await menuApi.update(editing.id, editing);
+      }
+      setDialogOpen(false);
+      await fetchItems();
+    } catch (err) {
+      if (err instanceof AuthError) { onAuthError?.(); return; }
+      setError(err instanceof Error ? err.message : "Failed to save");
+    } finally {
+      setSaving(false);
+    }
   };
-  const remove = (id: string) => setItems((prev) => prev.filter((i) => i.id !== id));
-  const toggleActive = (id: string) => setItems((prev) => prev.map((i) => (i.id === id ? { ...i, active: !i.active } : i)));
+
+  const remove = async (id: string) => {
+    try {
+      await menuApi.remove(id);
+      await fetchItems();
+    } catch (err) {
+      if (err instanceof AuthError) { onAuthError?.(); return; }
+      setError(err instanceof Error ? err.message : "Failed to delete");
+    }
+  };
+
+  const toggleActive = async (id: string) => {
+    const item = items.find((i) => i.id === id);
+    if (!item) return;
+    try {
+      await menuApi.update(id, { active: !item.active });
+      await fetchItems();
+    } catch (err) {
+      if (err instanceof AuthError) { onAuthError?.(); return; }
+      setError(err instanceof Error ? err.message : "Failed to update");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16 text-neutral-400">
+        <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading menu…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
+      {error && (
+        <div className="rounded-md bg-red-900/30 border border-red-800 px-4 py-2 text-sm text-red-300 flex items-center justify-between">
+          {error}
+          <Button variant="ghost" size="sm" onClick={fetchItems} className="text-red-300 hover:text-red-200"><RefreshCw className="h-4 w-4" /></Button>
+        </div>
+      )}
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
@@ -64,6 +124,7 @@ export default function MenuEditor() {
           <option value="">All categories</option>
           {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
+        <Button variant="ghost" size="icon" onClick={fetchItems} className="text-neutral-400 hover:text-neutral-200" title="Refresh"><RefreshCw className="h-4 w-4" /></Button>
         <Button onClick={openNew} className="bg-amber-600 hover:bg-amber-700 text-white"><Plus className="mr-1 h-4 w-4" />Add Item</Button>
       </div>
 
@@ -125,7 +186,9 @@ export default function MenuEditor() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} className="border-neutral-700 text-neutral-300">Cancel</Button>
-            <Button onClick={save} className="bg-amber-600 hover:bg-amber-700 text-white">Save</Button>
+            <Button onClick={save} disabled={saving} className="bg-amber-600 hover:bg-amber-700 text-white">
+              {saving ? <><Loader2 className="h-4 w-4 animate-spin mr-1" />Saving…</> : "Save"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

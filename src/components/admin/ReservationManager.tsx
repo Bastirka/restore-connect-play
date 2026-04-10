@@ -1,18 +1,13 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search } from "lucide-react";
+import { Search, Loader2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { reservationsApi, AuthError } from "@/lib/adminApi";
 import type { AdminReservation } from "@/types/admin";
 
 const STATUSES = ["pending", "confirmed", "cancelled", "completed"] as const;
-
-const MOCK: AdminReservation[] = [
-  { id: "R001", customerName: "Jānis Bērziņš", phone: "+371 20000001", date: "2026-04-12", time: "18:00", guests: 4, zone: "hall", status: "pending", notes: "" },
-  { id: "R002", customerName: "Anna Liepa", phone: "+371 20000002", date: "2026-04-12", time: "19:30", guests: 2, zone: "terrace", status: "confirmed", notes: "Birthday" },
-  { id: "R003", customerName: "Oleg Petrov", phone: "+371 20000003", date: "2026-04-11", time: "20:00", guests: 6, zone: "hall", status: "completed", notes: "" },
-];
 
 const statusColor: Record<string, string> = {
   pending: "bg-yellow-600/20 text-yellow-400",
@@ -21,11 +16,29 @@ const statusColor: Record<string, string> = {
   completed: "bg-neutral-700/40 text-neutral-300",
 };
 
-export default function ReservationManager() {
-  const [data, setData] = useState<AdminReservation[]>(MOCK);
+export default function ReservationManager({ onAuthError }: { onAuthError?: () => void }) {
+  const [data, setData] = useState<AdminReservation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+
+  const fetchReservations = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const list = await reservationsApi.list();
+      setData(list);
+    } catch (err) {
+      if (err instanceof AuthError) { onAuthError?.(); return; }
+      setError(err instanceof Error ? err.message : "Failed to load reservations");
+    } finally {
+      setLoading(false);
+    }
+  }, [onAuthError]);
+
+  useEffect(() => { fetchReservations(); }, [fetchReservations]);
 
   const filtered = data.filter((r) => {
     const matchSearch = !search || `${r.customerName} ${r.phone} ${r.id}`.toLowerCase().includes(search.toLowerCase());
@@ -34,11 +47,32 @@ export default function ReservationManager() {
     return matchSearch && matchDate && matchStatus;
   });
 
-  const changeStatus = (id: string, status: AdminReservation["status"]) =>
-    setData((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+  const changeStatus = async (id: string, status: AdminReservation["status"]) => {
+    try {
+      await reservationsApi.updateStatus(id, status);
+      await fetchReservations();
+    } catch (err) {
+      if (err instanceof AuthError) { onAuthError?.(); return; }
+      setError(err instanceof Error ? err.message : "Failed to update status");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16 text-neutral-400">
+        <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading reservations…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
+      {error && (
+        <div className="rounded-md bg-red-900/30 border border-red-800 px-4 py-2 text-sm text-red-300 flex items-center justify-between">
+          {error}
+          <Button variant="ghost" size="sm" onClick={fetchReservations} className="text-red-300 hover:text-red-200"><RefreshCw className="h-4 w-4" /></Button>
+        </div>
+      )}
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
@@ -50,6 +84,7 @@ export default function ReservationManager() {
           <option value="">All statuses</option>
           {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
+        <Button variant="ghost" size="icon" onClick={fetchReservations} className="text-neutral-400 hover:text-neutral-200" title="Refresh"><RefreshCw className="h-4 w-4" /></Button>
       </div>
 
       {/* Table */}
