@@ -35,12 +35,14 @@ export default function Admin() {
     return <AdminLogin onLogin={() => setAuthed(true)} />;
   }
 
+  const handleAuthError = () => setAuthed(false);
+
   const content: Record<AdminView, React.ReactNode> = {
     dashboard: <AdminDashboard />,
-    menu: <MenuEditor />,
+    menu: <MenuEditor onAuthError={handleAuthError} />,
     specials: <SpecialsEditor />,
-    hours: <HoursEditor />,
-    reservations: <ReservationManager />,
+    hours: <HoursEditor onAuthError={handleAuthError} />,
+    reservations: <ReservationManager onAuthError={handleAuthError} />,
     images: <ImageManager />,
   };
 
