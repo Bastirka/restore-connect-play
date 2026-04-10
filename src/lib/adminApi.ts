@@ -40,8 +40,20 @@ export interface ApiMenuItem {
   sortOrder: number;
 }
 
+function unwrapArray<T>(data: unknown, ...keys: string[]): T[] {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === "object") {
+    for (const key of keys) {
+      if (Array.isArray((data as Record<string, unknown>)[key])) {
+        return (data as Record<string, unknown>)[key] as T[];
+      }
+    }
+  }
+  return [];
+}
+
 export const menuApi = {
-  list: () => adminFetch<ApiMenuItem[]>("/admin/menu"),
+  list: async () => unwrapArray<ApiMenuItem>(await adminFetch<unknown>("/admin/menu"), "items", "menu", "data"),
   create: (item: Omit<ApiMenuItem, "id">) =>
     adminFetch<ApiMenuItem>("/admin/menu", { method: "POST", body: JSON.stringify(item) }),
   update: (id: string, item: Partial<ApiMenuItem>) =>
