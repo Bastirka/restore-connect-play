@@ -1,8 +1,14 @@
-const API_BASE = "https://sedo-admin-auth.raivisbabris99.workers.dev";
+const API_BASE = "https://sedo-admin-auth.raivisbabris99.workers.dev".replace(/\/+$/, "");
+
+const AUTH_ENDPOINTS = {
+  login: `${API_BASE}/admin/login`,
+  verify: `${API_BASE}/admin/verify`,
+  logout: `${API_BASE}/admin/logout`,
+} as const;
 
 export async function adminLogin(username: string, password: string): Promise<{ ok: boolean; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE}/admin/login`, {
+    const res = await fetch(AUTH_ENDPOINTS.login, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -18,7 +24,7 @@ export async function adminLogin(username: string, password: string): Promise<{ 
 
 export async function adminVerify(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE}/admin/verify`, {
+    const res = await fetch(AUTH_ENDPOINTS.verify, {
       method: "GET",
       credentials: "include",
     });
@@ -30,7 +36,7 @@ export async function adminVerify(): Promise<boolean> {
 
 export async function adminLogout(): Promise<void> {
   try {
-    await fetch(`${API_BASE}/admin/logout`, {
+    await fetch(AUTH_ENDPOINTS.logout, {
       method: "POST",
       credentials: "include",
     });
