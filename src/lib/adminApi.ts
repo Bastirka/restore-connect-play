@@ -92,7 +92,7 @@ export interface ApiReservation {
 }
 
 export const reservationsApi = {
-  list: () => adminFetch<ApiReservation[]>("/admin/reservations"),
+  list: async () => unwrapArray<ApiReservation>(await adminFetch<unknown>("/admin/reservations"), "reservations", "items", "data"),
   updateStatus: (id: string, status: ApiReservation["status"]) =>
     adminFetch<ApiReservation>(`/admin/reservations/${id}`, {
       method: "PUT",
