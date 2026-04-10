@@ -1,4 +1,4 @@
-const API_BASE = "https://sedo-admin-auth.raivisbabris99.workers.dev/";
+const API_BASE = "https://sedo-admin-auth.raivisbabris99.workers.dev";
 
 export async function adminLogin(username: string, password: string): Promise<{ ok: boolean; error?: string }> {
   try {
