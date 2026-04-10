@@ -7,17 +7,33 @@ import SpecialsEditor from "@/components/admin/SpecialsEditor";
 import HoursEditor from "@/components/admin/HoursEditor";
 import ReservationManager from "@/components/admin/ReservationManager";
 import ImageManager from "@/components/admin/ImageManager";
+import { adminVerify, adminLogout } from "@/lib/adminAuth";
 
 export default function Admin() {
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem("admin-auth") === "true");
+  const [authed, setAuthed] = useState<boolean | null>(null); // null = loading
   const [view, setView] = useState<AdminView>("dashboard");
 
-  const logout = () => {
-    sessionStorage.removeItem("admin-auth");
+  useEffect(() => {
+    adminVerify().then(setAuthed);
+  }, []);
+
+  const logout = async () => {
+    await adminLogout();
     setAuthed(false);
   };
 
-  if (!authed) return <AdminLogin onLogin={() => setAuthed(true)} />;
+  // Loading state while verifying session
+  if (authed === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-950 text-neutral-400">
+        Verifying session…
+      </div>
+    );
+  }
+
+  if (!authed) {
+    return <AdminLogin onLogin={() => setAuthed(true)} />;
+  }
 
   const content: Record<AdminView, React.ReactNode> = {
     dashboard: <AdminDashboard />,

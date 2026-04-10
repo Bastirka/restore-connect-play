@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Lock } from "lucide-react";
+import { Lock, Loader2 } from "lucide-react";
+import { adminLogin } from "@/lib/adminAuth";
 
 interface AdminLoginProps {
   onLogin: () => void;
@@ -13,15 +14,24 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Placeholder auth — replace with real auth later
-    if (username.trim() && password.trim()) {
-      sessionStorage.setItem("admin-auth", "true");
+    if (!username.trim() || !password.trim()) {
+      setError("Please enter credentials");
+      return;
+    }
+
+    setError("");
+    setLoading(true);
+    const result = await adminLogin(username, password);
+    setLoading(false);
+
+    if (result.ok) {
       onLogin();
     } else {
-      setError("Please enter credentials");
+      setError(result.error || "Login failed");
     }
   };
 
@@ -44,6 +54,7 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
                 onChange={(e) => setUsername(e.target.value)}
                 className="border-neutral-700 bg-neutral-800 text-neutral-100 placeholder:text-neutral-500"
                 placeholder="admin"
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -55,11 +66,17 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
                 onChange={(e) => setPassword(e.target.value)}
                 className="border-neutral-700 bg-neutral-800 text-neutral-100 placeholder:text-neutral-500"
                 placeholder="••••••••"
+                disabled={loading}
               />
             </div>
             {error && <p className="text-sm text-red-400">{error}</p>}
-            <Button type="submit" className="w-full bg-amber-600 text-white hover:bg-amber-700">
-              Sign In
+            <Button
+              type="submit"
+              className="w-full bg-amber-600 text-white hover:bg-amber-700"
+              disabled={loading}
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {loading ? "Signing in…" : "Sign In"}
             </Button>
           </form>
         </CardContent>
