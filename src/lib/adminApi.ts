@@ -16,7 +16,7 @@ async function adminFetch<T>(path: string, options?: RequestInit): Promise<T> {
     const body = await res.text().catch(() => "");
     throw new Error(`API error ${res.status}: ${body}`);
   }
-  return res.json();
+  return res.json() as Promise<T>;
 }
 
 export class AuthError extends Error {
