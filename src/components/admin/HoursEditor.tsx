@@ -7,6 +7,18 @@ import { Loader2, RefreshCw, Save } from "lucide-react";
 import { hoursApi, AuthError } from "@/lib/adminApi";
 import type { AdminHours } from "@/types/admin";
 
+const DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+
+const DEFAULT_HOURS: AdminHours[] = [
+  { day: "mon", open: "10:00", close: "22:00", closed: false },
+  { day: "tue", open: "10:00", close: "22:00", closed: false },
+  { day: "wed", open: "10:00", close: "22:00", closed: false },
+  { day: "thu", open: "10:00", close: "22:00", closed: false },
+  { day: "fri", open: "10:00", close: "23:00", closed: false },
+  { day: "sat", open: "11:00", close: "23:00", closed: false },
+  { day: "sun", open: "11:00", close: "21:00", closed: false },
+];
+
 export default function HoursEditor({ onAuthError }: { onAuthError?: () => void }) {
   const [hours, setHours] = useState<AdminHours[]>([]);
   const [loading, setLoading] = useState(true);
@@ -15,22 +27,42 @@ export default function HoursEditor({ onAuthError }: { onAuthError?: () => void 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const normalizeHours = (data: AdminHours[]): AdminHours[] => {
+    const byDay = new Map(data.map((row) => [row.day, row]));
+    return DAY_ORDER.map((day) => {
+      const found = byDay.get(day);
+      const fallback = DEFAULT_HOURS.find((d) => d.day === day)!;
+
+      return {
+        day,
+        open: found?.open || fallback.open,
+        close: found?.close || fallback.close,
+        closed: Boolean(found?.closed ?? fallback.closed),
+      };
+    });
+  };
+
   const fetchHours = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
       const data = await hoursApi.list();
-      setHours(data);
+      setHours(normalizeHours(data));
       setDirty(false);
     } catch (err) {
-      if (err instanceof AuthError) { onAuthError?.(); return; }
+      if (err instanceof AuthError) {
+        onAuthError?.();
+        return;
+      }
       setError(err instanceof Error ? err.message : "Failed to load hours");
     } finally {
       setLoading(false);
     }
   }, [onAuthError]);
 
-  useEffect(() => { fetchHours(); }, [fetchHours]);
+  useEffect(() => {
+    fetchHours();
+  }, [fetchHours]);
 
   const update = (idx: number, patch: Partial<AdminHours>) => {
     setHours((prev) => prev.map((h, i) => (i === idx ? { ...h, ...patch } : h)));
@@ -43,13 +75,24 @@ export default function HoursEditor({ onAuthError }: { onAuthError?: () => void 
       setSaving(true);
       setError("");
       setSuccess("");
-      const data = await hoursApi.update(hours);
-      setHours(data);
+
+      const payload = hours.map((h) => ({
+        day: h.day,
+        open: h.open,
+        close: h.close,
+        closed: !!h.closed,
+      }));
+
+      await hoursApi.update(payload);
+      setHours(normalizeHours(payload));
       setDirty(false);
       setSuccess("Hours saved successfully");
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      if (err instanceof AuthError) { onAuthError?.(); return; }
+      if (err instanceof AuthError) {
+        onAuthError?.();
+        return;
+      }
       setError(err instanceof Error ? err.message : "Failed to save hours");
     } finally {
       setSaving(false);
@@ -59,7 +102,8 @@ export default function HoursEditor({ onAuthError }: { onAuthError?: () => void 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16 text-neutral-400">
-        <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading hours…
+        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+        Loading hours…
       </div>
     );
   }
@@ -67,23 +111,47 @@ export default function HoursEditor({ onAuthError }: { onAuthError?: () => void 
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-md bg-red-900/30 border border-red-800 px-4 py-2 text-sm text-red-300 flex items-center justify-between">
+        <div className="flex items-center justify-between rounded-md border border-red-800 bg-red-900/30 px-4 py-2 text-sm text-red-300">
           {error}
-          <Button variant="ghost" size="sm" onClick={fetchHours} className="text-red-300 hover:text-red-200"><RefreshCw className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="sm" onClick={fetchHours} className="text-red-300 hover:text-red-200">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
         </div>
       )}
+
       {success && (
-        <div className="rounded-md bg-green-900/30 border border-green-800 px-4 py-2 text-sm text-green-300">{success}</div>
+        <div className="rounded-md border border-green-800 bg-green-900/30 px-4 py-2 text-sm text-green-300">
+          {success}
+        </div>
       )}
 
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="icon" onClick={fetchHours} className="text-neutral-400 hover:text-neutral-200" title="Refresh"><RefreshCw className="h-4 w-4" /></Button>
-        <Button onClick={saveHours} disabled={!dirty || saving} className="bg-amber-600 hover:bg-amber-700 text-white">
-          {saving ? <><Loader2 className="h-4 w-4 animate-spin mr-1" />Saving…</> : <><Save className="h-4 w-4 mr-1" />Save Hours</>}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={fetchHours}
+          className="text-neutral-400 hover:text-neutral-200"
+          title="Refresh"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+
+        <Button onClick={saveHours} disabled={!dirty || saving} className="bg-amber-600 text-white hover:bg-amber-700">
+          {saving ? (
+            <>
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+              Saving…
+            </>
+          ) : (
+            <>
+              <Save className="mr-1 h-4 w-4" />
+              Save Hours
+            </>
+          )}
         </Button>
       </div>
 
-      <div className="rounded-lg border border-neutral-800 overflow-auto">
+      <div className="overflow-auto rounded-lg border border-neutral-800">
         <Table>
           <TableHeader>
             <TableRow className="border-neutral-800 hover:bg-transparent">
@@ -93,28 +161,32 @@ export default function HoursEditor({ onAuthError }: { onAuthError?: () => void 
               <TableHead className="text-neutral-400">Closed</TableHead>
             </TableRow>
           </TableHeader>
+
           <TableBody>
             {hours.map((h, i) => (
               <TableRow key={h.day} className="border-neutral-800">
-                <TableCell className="font-medium text-neutral-100">{h.day}</TableCell>
+                <TableCell className="font-medium uppercase text-neutral-100">{h.day}</TableCell>
+
                 <TableCell>
                   <Input
                     type="time"
-                    value={h.openTime}
+                    value={h.open}
                     disabled={h.closed}
-                    onChange={(e) => update(i, { openTime: e.target.value })}
+                    onChange={(e) => update(i, { open: e.target.value })}
                     className="w-32 border-neutral-700 bg-neutral-800 text-neutral-100 disabled:opacity-40"
                   />
                 </TableCell>
+
                 <TableCell>
                   <Input
                     type="time"
-                    value={h.closeTime}
+                    value={h.close}
                     disabled={h.closed}
-                    onChange={(e) => update(i, { closeTime: e.target.value })}
+                    onChange={(e) => update(i, { close: e.target.value })}
                     className="w-32 border-neutral-700 bg-neutral-800 text-neutral-100 disabled:opacity-40"
                   />
                 </TableCell>
+
                 <TableCell>
                   <Switch checked={h.closed} onCheckedChange={(v) => update(i, { closed: v })} />
                 </TableCell>
