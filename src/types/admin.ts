@@ -47,6 +47,7 @@ export interface AdminReservation {
   email?: string;
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
+  endTime?: string; // HH:mm
   guests: number;
   zone: string;
   status: ReservationStatus;

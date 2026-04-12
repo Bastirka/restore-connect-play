@@ -176,6 +176,7 @@ export interface ApiReservation {
   phone: string;
   date: string;
   time: string;
+  endTime: string;
   guests: number;
   zone: string;
   status: string;
@@ -191,6 +192,7 @@ function normalizeReservations(data: unknown): ApiReservation[] {
     phone: String(r.phone || ""),
     date: String(r.date || ""),
     time: String(r.time || ""),
+    endTime: String(r.endTime || ""),
     guests: Number(r.guests || 0),
     zone: String(r.zone || ""),
     status: String(r.status || "active"),

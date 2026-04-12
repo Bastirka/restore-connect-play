@@ -38,8 +38,10 @@ const translations = {
     emailPlaceholder: "jusu.epasts@gmail.com",
 
     dateLabel: "Datums *",
-    timeLabel: "Laiks *",
+    timeFromLabel: "No *",
+    timeUntilLabel: "Līdz *",
     timePlaceholder: "Izvēlieties laiku",
+    timeError: "Beigu laikam jābūt vēlākam par sākuma laiku.",
 
     guestsLabel: "Personu skaits *",
     zoneLabel: "Vieta *",
@@ -85,8 +87,10 @@ const translations = {
     emailPlaceholder: "your.email@gmail.com",
 
     dateLabel: "Date *",
-    timeLabel: "Time *",
+    timeFromLabel: "From *",
+    timeUntilLabel: "Until *",
     timePlaceholder: "Select time",
+    timeError: "End time must be later than start time.",
 
     guestsLabel: "Number of guests *",
     zoneLabel: "Seating area *",
@@ -132,8 +136,10 @@ const translations = {
     emailPlaceholder: "your.email@gmail.com",
 
     dateLabel: "Дата *",
-    timeLabel: "Время *",
+    timeFromLabel: "С *",
+    timeUntilLabel: "До *",
     timePlaceholder: "Выберите время",
+    timeError: "Время окончания должно быть позже времени начала.",
 
     guestsLabel: "Количество гостей *",
     zoneLabel: "Место *",
@@ -179,8 +185,10 @@ const translations = {
     emailPlaceholder: "your.email@gmail.com",
 
     dateLabel: "Дата *",
-    timeLabel: "Час *",
+    timeFromLabel: "З *",
+    timeUntilLabel: "До *",
     timePlaceholder: "Оберіть час",
+    timeError: "Час завершення має бути пізніше за час початку.",
 
     guestsLabel: "Кількість гостей *",
     zoneLabel: "Місце *",
@@ -302,6 +310,7 @@ export default function ReservationSection() {
   const [email, setEmail] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [guests, setGuests] = useState("2");
   const [zone, setZone] = useState("Centrālā zāle");
   const [notes, setNotes] = useState("");
@@ -323,9 +332,11 @@ export default function ReservationSection() {
   const textareaClass =
     "w-full min-w-0 rounded-[20px] border border-white/10 bg-black px-4 py-4 text-base text-white outline-none transition placeholder:text-white/35 focus:border-amber-500/50 md:rounded-[24px] md:px-5 md:text-lg";
 
+  const timeRangeValid = !time || !endTime || endTime > time;
+
   const checkAvailability = async () => {
     try {
-      if (!date || !time || !zone || !guests) {
+      if (!date || !time || !endTime || !zone || !guests || !timeRangeValid) {
         setAvailabilityError("");
         setAvailabilityData(null);
         return;
@@ -338,6 +349,7 @@ export default function ReservationSection() {
         action: "availability",
         date,
         time,
+        endTime,
         guests: Number(guests),
         zone,
       });
@@ -353,7 +365,7 @@ export default function ReservationSection() {
   };
 
   useEffect(() => {
-    if (!date || !time || !zone || !guests) {
+    if (!date || !time || !endTime || !zone || !guests || !timeRangeValid) {
       setAvailabilityError("");
       setAvailabilityData(null);
       return;
@@ -364,7 +376,7 @@ export default function ReservationSection() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [date, time, zone, guests]);
+  }, [date, time, endTime, zone, guests]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -381,6 +393,7 @@ export default function ReservationSection() {
         email: email.trim(),
         date,
         time,
+        endTime,
         guests: Number(guests),
         zone,
         notes: notes.trim(),
@@ -391,7 +404,7 @@ export default function ReservationSection() {
       const reservationId = data?.reservationId || "";
 
       setSubmitSuccess(
-        `${t.success}\n${t.reservationId}: ${reservationId}\n${t.saveId}${warning ? `\n\n${t.note}: ${warning}` : ""}`,
+        `${t.success}\n${t.reservationId}: ${reservationId}\n${time}–${endTime}\n${t.saveId}${warning ? `\n\n${t.note}: ${warning}` : ""}`,
       );
 
       setName("");
@@ -399,6 +412,7 @@ export default function ReservationSection() {
       setEmail("");
       setDate("");
       setTime("");
+      setEndTime("");
       setGuests("2");
       setZone("Centrālā zāle");
       setNotes("");
@@ -470,19 +484,41 @@ export default function ReservationSection() {
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required className={inputClass} />
           </FieldShell>
 
-          <FieldShell label={t.timeLabel} icon={<Clock size={18} className="shrink-0 text-amber-400 md:size-5" />}>
-            <div className="relative min-w-0">
-              <select value={time} onChange={(e) => setTime(e.target.value)} required className={selectClass}>
-                <option value="">{t.timePlaceholder}</option>
-                {timeOptions.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-              <SelectChevron />
+          <div className="grid grid-cols-2 gap-3">
+            <FieldShell label={t.timeFromLabel} icon={<Clock size={18} className="shrink-0 text-amber-400 md:size-5" />}>
+              <div className="relative min-w-0">
+                <select value={time} onChange={(e) => setTime(e.target.value)} required className={selectClass}>
+                  <option value="">{t.timePlaceholder}</option>
+                  {timeOptions.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+                <SelectChevron />
+              </div>
+            </FieldShell>
+
+            <FieldShell label={t.timeUntilLabel} icon={<Clock size={18} className="shrink-0 text-amber-400 md:size-5" />}>
+              <div className="relative min-w-0">
+                <select value={endTime} onChange={(e) => setEndTime(e.target.value)} required className={selectClass}>
+                  <option value="">{t.timePlaceholder}</option>
+                  {timeOptions.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+                <SelectChevron />
+              </div>
+            </FieldShell>
+          </div>
+
+          {time && endTime && !timeRangeValid && (
+            <div className="rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300 md:text-base">
+              {t.timeError}
             </div>
-          </FieldShell>
+          )}
 
           <FieldShell label={t.guestsLabel} icon={<Users size={18} className="shrink-0 text-amber-400 md:size-5" />}>
             <div className="relative min-w-0">
