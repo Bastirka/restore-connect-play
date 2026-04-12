@@ -16,7 +16,7 @@ const statusColor: Record<string, string> = {
 };
 
 export default function ReservationManager({ onAuthError }: { onAuthError?: () => void }) {
-  const [data, setData] = useState<AdminReservation[]>([]);
+  const [data, setData] = useState<ApiReservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
@@ -40,16 +40,16 @@ export default function ReservationManager({ onAuthError }: { onAuthError?: () =
   useEffect(() => { fetchReservations(); }, [fetchReservations]);
 
   const filtered = data.filter((r) => {
-    const matchSearch = !search || `${r.customerName} ${r.phone} ${r.id}`.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search || `${r.name} ${r.phone} ${r.reservationId}`.toLowerCase().includes(search.toLowerCase());
     const matchDate = !dateFilter || r.date === dateFilter;
     const matchStatus = !statusFilter || r.status === statusFilter;
     return matchSearch && matchDate && matchStatus;
   });
 
-  const changeStatus = async (id: string, status: AdminReservation["status"]) => {
+  const changeStatus = async (id: string, status: string) => {
     try {
-      await reservationsApi.updateStatus(id, status);
-      await fetchReservations();
+      // Update locally until a real updateStatus endpoint exists
+      setData((prev) => prev.map((r) => r.reservationId === id ? { ...r, status } : r));
     } catch (err) {
       if (err instanceof AuthError) { onAuthError?.(); return; }
       setError(err instanceof Error ? err.message : "Failed to update status");
@@ -105,9 +105,9 @@ export default function ReservationManager({ onAuthError }: { onAuthError?: () =
           </TableHeader>
           <TableBody>
             {filtered.map((r) => (
-              <TableRow key={r.id} className="border-neutral-800">
-                <TableCell className="text-neutral-400 font-mono text-xs">{r.id}</TableCell>
-                <TableCell className="text-neutral-100 font-medium">{r.customerName}</TableCell>
+              <TableRow key={r.reservationId} className="border-neutral-800">
+                <TableCell className="text-neutral-400 font-mono text-xs">{r.reservationId}</TableCell>
+                <TableCell className="text-neutral-100 font-medium">{r.name}</TableCell>
                 <TableCell className="text-neutral-300">{r.phone}</TableCell>
                 <TableCell className="text-neutral-300">{r.date}</TableCell>
                 <TableCell className="text-neutral-300">{r.time}</TableCell>
@@ -122,7 +122,7 @@ export default function ReservationManager({ onAuthError }: { onAuthError?: () =
                 <TableCell className="text-right">
                   <select
                     value={r.status}
-                    onChange={(e) => changeStatus(r.id, e.target.value as AdminReservation["status"])}
+                    onChange={(e) => changeStatus(r.reservationId, e.target.value)}
                     className="rounded border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-100"
                   >
                     {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
