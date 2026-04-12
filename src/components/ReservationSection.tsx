@@ -38,8 +38,10 @@ const translations = {
     emailPlaceholder: "jusu.epasts@gmail.com",
 
     dateLabel: "Datums *",
-    timeLabel: "Laiks *",
+    timeFromLabel: "No *",
+    timeUntilLabel: "Līdz *",
     timePlaceholder: "Izvēlieties laiku",
+    timeError: "Beigu laikam jābūt vēlākam par sākuma laiku.",
 
     guestsLabel: "Personu skaits *",
     zoneLabel: "Vieta *",
@@ -85,8 +87,10 @@ const translations = {
     emailPlaceholder: "your.email@gmail.com",
 
     dateLabel: "Date *",
-    timeLabel: "Time *",
+    timeFromLabel: "From *",
+    timeUntilLabel: "Until *",
     timePlaceholder: "Select time",
+    timeError: "End time must be later than start time.",
 
     guestsLabel: "Number of guests *",
     zoneLabel: "Seating area *",
@@ -132,8 +136,10 @@ const translations = {
     emailPlaceholder: "your.email@gmail.com",
 
     dateLabel: "Дата *",
-    timeLabel: "Время *",
+    timeFromLabel: "С *",
+    timeUntilLabel: "До *",
     timePlaceholder: "Выберите время",
+    timeError: "Время окончания должно быть позже времени начала.",
 
     guestsLabel: "Количество гостей *",
     zoneLabel: "Место *",
@@ -179,8 +185,10 @@ const translations = {
     emailPlaceholder: "your.email@gmail.com",
 
     dateLabel: "Дата *",
-    timeLabel: "Час *",
+    timeFromLabel: "З *",
+    timeUntilLabel: "До *",
     timePlaceholder: "Оберіть час",
+    timeError: "Час завершення має бути пізніше за час початку.",
 
     guestsLabel: "Кількість гостей *",
     zoneLabel: "Місце *",
