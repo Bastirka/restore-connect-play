@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Loader2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { reservationsApi, AuthError } from "@/lib/adminApi";
-import type { AdminReservation } from "@/types/admin";
+import { reservationsApi, AuthError, type ApiReservation } from "@/lib/adminApi";
 
 const STATUSES = ["pending", "confirmed", "cancelled", "completed"] as const;
 
