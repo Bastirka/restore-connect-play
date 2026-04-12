@@ -110,7 +110,7 @@ export default function ReservationManager({ onAuthError }: { onAuthError?: () =
                 <TableCell className="text-neutral-100 font-medium">{r.name}</TableCell>
                 <TableCell className="text-neutral-300">{r.phone}</TableCell>
                 <TableCell className="text-neutral-300">{r.date}</TableCell>
-                <TableCell className="text-neutral-300">{r.time}</TableCell>
+                <TableCell className="text-neutral-300">{r.time}{r.endTime ? `–${r.endTime}` : ""}</TableCell>
                 <TableCell className="text-neutral-300">{r.guests}</TableCell>
                 <TableCell className="text-neutral-300 capitalize">{r.zone}</TableCell>
                 <TableCell>
