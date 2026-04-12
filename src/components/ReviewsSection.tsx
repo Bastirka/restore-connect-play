@@ -69,37 +69,68 @@ const translations = {
   },
 } as const;
 
+declare global {
+  interface Window {
+    google?: typeof google;
+    __googleMapsLoaderPromise?: Promise<void>;
+  }
+}
+
+function getSafeLang(lang: string) {
+  if (lang === "en" || lang === "ru" || lang === "uk") return lang;
+  return "lv";
+}
+
+function renderStars(rating: number, size = 16) {
+  return Array.from({ length: 5 }).map((_, index) => {
+    const filled = index < Math.round(rating);
+
+    return (
+      <Star
+        key={`${rating}-${index}`}
+        size={size}
+        className={filled ? "fill-yellow-400 text-yellow-400" : "text-white/20"}
+      />
+    );
+  });
+}
+
 function loadGoogleMaps(apiKey: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (typeof window === "undefined") {
-      reject(new Error("Window is undefined"));
-      return;
-    }
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("Window is undefined"));
+  }
 
-    if (window.google?.maps?.places) {
-      resolve();
-      return;
-    }
+  if (window.google?.maps?.places) {
+    return Promise.resolve();
+  }
 
+  if (window.__googleMapsLoaderPromise) {
+    return window.__googleMapsLoaderPromise;
+  }
+
+  window.__googleMapsLoaderPromise = new Promise<void>((resolve, reject) => {
     const existingScript = document.querySelector('script[data-google-maps="true"]') as HTMLScriptElement | null;
 
     if (existingScript) {
-      const onLoad = () => {
-        if (window.google?.maps?.places) resolve();
-        else reject(new Error("Google Maps loaded but Places API missing"));
-      };
+      existingScript.addEventListener(
+        "load",
+        () => {
+          if (window.google?.maps?.places) resolve();
+          else reject(new Error("Google Maps loaded but Places API missing"));
+        },
+        { once: true },
+      );
 
-      const onError = () => {
-        reject(new Error("Failed to load existing Google Maps script"));
-      };
-
-      existingScript.addEventListener("load", onLoad, { once: true });
-      existingScript.addEventListener("error", onError, { once: true });
+      existingScript.addEventListener("error", () => reject(new Error("Failed to load existing Google Maps script")), {
+        once: true,
+      });
       return;
     }
 
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
+      apiKey,
+    )}&loading=async&libraries=places`;
     script.async = true;
     script.defer = true;
     script.setAttribute("data-google-maps", "true");
@@ -115,6 +146,8 @@ function loadGoogleMaps(apiKey: string): Promise<void> {
 
     document.head.appendChild(script);
   });
+
+  return window.__googleMapsLoaderPromise;
 }
 
 function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
@@ -133,8 +166,8 @@ function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
           placeId,
           fields: ["name", "rating", "user_ratings_total", "reviews", "url"],
         },
-        (place: any, status: string) => {
-          if (status !== window.google.maps.places.PlacesServiceStatus.OK || !place) {
+        (place: any, status: google.maps.places.PlacesServiceStatus) => {
+          if (status !== window.google!.maps.places.PlacesServiceStatus.OK || !place) {
             reject(new Error(`PlacesService failed with status: ${status}`));
             return;
           }
@@ -142,17 +175,17 @@ function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
           const reviews: Review[] = Array.isArray(place.reviews)
             ? place.reviews
                 .map((review: any) => ({
-                  author_name: review.author_name || "Google user",
-                  rating: Number(review.rating || 0),
-                  text: review.text || "",
-                  relative_time_description: review.relative_time_description || "",
-                  time: review.time,
+                  author_name: review?.author_name || "Google user",
+                  rating: Number(review?.rating || 0),
+                  text: String(review?.text || "").trim(),
+                  relative_time_description: review?.relative_time_description || "",
+                  time: typeof review?.time === "number" ? review.time : 0,
                 }))
-                .filter((review: Review) => review.text.trim().length > 0)
+                .filter((review: Review) => review.text.length > 0)
             : [];
 
           resolve({
-            name: place.name || "",
+            name: String(place.name || ""),
             rating: Number(place.rating || 0),
             user_ratings_total: Number(place.user_ratings_total || 0),
             url: place.url || "",
@@ -164,25 +197,6 @@ function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
       reject(error);
     }
   });
-}
-
-function renderStars(rating: number, size = 16) {
-  return Array.from({ length: 5 }).map((_, index) => {
-    const filled = index < Math.round(rating);
-
-    return (
-      <Star
-        key={`${rating}-${index}`}
-        size={size}
-        className={filled ? "fill-yellow-400 text-yellow-400" : "text-white/20"}
-      />
-    );
-  });
-}
-
-function getSafeLang(lang: string) {
-  if (lang === "en" || lang === "ru" || lang === "uk") return lang;
-  return "lv";
 }
 
 const ReviewsSection = () => {
@@ -198,47 +212,43 @@ const ReviewsSection = () => {
   const placeId = "ChIJ4Y34IQAXwkYREqZLq8_s1WQ";
 
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
 
     async function loadReviews() {
       try {
-        if (!apiKey || !placeId) {
-          if (isMounted) {
-            setGoogleAvailable(false);
-            setPlaceData(null);
-            setLoading(false);
-          }
-          return;
+        if (!apiKey?.trim()) {
+          throw new Error("Missing VITE_GOOGLE_MAPS_API_KEY");
         }
 
-        await loadGoogleMaps(apiKey);
+        await loadGoogleMaps(apiKey.trim());
         const details = await getPlaceDetails(placeId);
 
-        if (!isMounted) return;
+        if (!mounted) return;
 
         setPlaceData(details);
         setGoogleAvailable(true);
       } catch (error) {
         console.error("Failed to load Google reviews:", error);
 
-        if (!isMounted) return;
+        if (!mounted) return;
 
-        setGoogleAvailable(false);
         setPlaceData(null);
+        setGoogleAvailable(false);
       } finally {
-        if (isMounted) setLoading(false);
+        if (mounted) setLoading(false);
       }
     }
 
     loadReviews();
 
     return () => {
-      isMounted = false;
+      mounted = false;
     };
-  }, [apiKey, placeId]);
+  }, [apiKey]);
 
   const reviewList = useMemo(() => {
     if (!placeData?.reviews?.length) return [];
+
     return [...placeData.reviews]
       .sort((a, b) => {
         const timeDiff = (b.time || 0) - (a.time || 0);
