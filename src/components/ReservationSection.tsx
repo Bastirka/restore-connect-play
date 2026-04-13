@@ -69,6 +69,7 @@ const translations = {
       central: "Centrālā zāle",
       vip: "VIP",
       entrance: "Pie ieejas",
+      whole: "Viss restorāns",
     },
   },
 
@@ -118,6 +119,7 @@ const translations = {
       central: "Main hall",
       vip: "VIP",
       entrance: "Near entrance",
+      whole: "Whole restaurant",
     },
   },
 
@@ -167,6 +169,7 @@ const translations = {
       central: "Центральный зал",
       vip: "VIP",
       entrance: "У входа",
+      whole: "Весь ресторан",
     },
   },
 
@@ -216,6 +219,7 @@ const translations = {
       central: "Центральний зал",
       vip: "VIP",
       entrance: "Біля входу",
+      whole: "Увесь ресторан",
     },
   },
 } as const;
@@ -276,6 +280,7 @@ export default function ReservationSection() {
     { value: "Centrālā zāle", label: t.zones.central },
     { value: "VIP", label: t.zones.vip },
     { value: "Pie ieejas", label: t.zones.entrance },
+    { value: "Viss restorāns", label: t.zones.whole },
   ];
 
   const timeOptions = [
@@ -535,16 +540,16 @@ export default function ReservationSection() {
           )}
 
           <FieldShell label={t.guestsLabel} icon={<Users size={18} className="shrink-0 text-amber-400 md:size-5" />}>
-            <div className="relative min-w-0">
-              <select value={guests} onChange={(e) => setGuests(e.target.value)} required className={selectClass}>
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
-                  <option key={num} value={String(num)}>
-                    {num}
-                  </option>
-                ))}
-              </select>
-              <SelectChevron />
-            </div>
+            <input
+              type="number"
+              value={guests}
+              onChange={(e) => setGuests(e.target.value)}
+              required
+              min={1}
+              max={50}
+              inputMode="numeric"
+              className={inputClass}
+            />
           </FieldShell>
 
           <FieldShell label={t.zoneLabel} icon={<Utensils size={18} className="shrink-0 text-amber-400 md:size-5" />}>
