@@ -378,8 +378,22 @@ export default function ReservationSection() {
     return () => clearTimeout(timer);
   }, [date, time, endTime, zone, guests]);
 
+  const canSubmit =
+    !submitLoading &&
+    !availabilityLoading &&
+    timeRangeValid &&
+    !!name.trim() &&
+    !!phone.trim() &&
+    !!date &&
+    !!time &&
+    !!endTime &&
+    !!zone &&
+    availabilityData?.available !== false;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!canSubmit) return;
 
     try {
       setSubmitLoading(true);
@@ -601,7 +615,7 @@ export default function ReservationSection() {
 
           <button
             type="submit"
-            disabled={submitLoading}
+            disabled={!canSubmit}
             className="flex h-14 w-full items-center justify-center gap-3 rounded-[20px] bg-[#9d1c1c] px-6 text-lg font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:h-16 md:rounded-[24px] md:text-2xl"
           >
             <Send size={20} />
