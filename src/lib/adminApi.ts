@@ -1,15 +1,11 @@
 const API_BASE = "https://sedo-admin-auth.raivisbabris99.workers.dev";
 
-// ───────── ERRORS ─────────
-
 export class AuthError extends Error {
   constructor(message = "Session expired") {
     super(message);
     this.name = "AuthError";
   }
 }
-
-// ───────── CORE FETCH ─────────
 
 async function adminFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -192,7 +188,7 @@ function normalizeReservations(data: unknown): ApiReservation[] {
     phone: String(r.phone || ""),
     date: String(r.date || ""),
     time: String(r.time || ""),
-    endTime: String(r.endTime || ""),
+    endTime: String(r.endTime || r.end_time || ""),
     guests: Number(r.guests || 0),
     zone: String(r.zone || ""),
     status: String(r.status || "active"),
