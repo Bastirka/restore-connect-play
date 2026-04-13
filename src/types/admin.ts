@@ -12,7 +12,7 @@ export interface AdminMenuItem {
   sortOrder: number;
 }
 
-// ───────── SPECIALS (hero / plakāti) ─────────
+// ───────── SPECIALS ─────────
 
 export interface AdminSpecial {
   id: string;
@@ -22,37 +22,37 @@ export interface AdminSpecial {
   buttonText: string;
   buttonLink: string;
   active: boolean;
-  startDate: string; // YYYY-MM-DD
-  endDate: string; // YYYY-MM-DD
+  startDate: string;
+  endDate: string;
   sortOrder: number;
 }
 
-// ───────── HOURS (SVARĪGI: open/close, nevis openTime) ─────────
+// ───────── HOURS ─────────
 
 export interface AdminHours {
-  day: string; // mon, tue, wed...
-  open: string; // "10:00"
-  close: string; // "22:00"
+  day: string;
+  open: string;
+  close: string;
   closed: boolean;
 }
 
 // ───────── RESERVATIONS ─────────
 
-export type ReservationStatus = "pending" | "confirmed" | "cancelled" | "completed" | "active"; // worker izmanto "active"
+export type ReservationStatus = "pending" | "confirmed" | "cancelled" | "completed" | "active";
 
 export interface AdminReservation {
   id: string;
-  name: string; // ⚠️ NEVIS customerName
+  name: string;
   phone: string;
   email?: string;
-  date: string; // YYYY-MM-DD
-  time: string; // HH:mm
-  endTime?: string; // HH:mm
+  date: string;
+  time: string;
+  endTime?: string;
   guests: number;
   zone: string;
   status: ReservationStatus;
   notes?: string;
-  tableIds?: string[]; // no worker
+  tableIds?: string[];
 }
 
 // ───────── IMAGES ─────────
@@ -65,19 +65,15 @@ export interface AdminImage {
   uploadedAt: string;
 }
 
-// ───────── API RESPONSE WRAPPERS (drošībai) ─────────
+// ───────── HELPERS ─────────
 
 export interface ApiListResponse<T> {
   items?: T[];
   data?: T[];
 }
 
-// ───────── HELPER TYPES ─────────
-
 export type ID = string;
-
 export type Nullable<T> = T | null;
-
 export type Optional<T> = {
   [K in keyof T]?: T[K];
 };
