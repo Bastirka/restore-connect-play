@@ -19,6 +19,8 @@ const translations = {
     errorMissingPhone: "Ievadiet telefona numuru",
     errorNotFound: "Rezervācija nav atrasta",
     errorContactMismatch: "Telefona numurs nesakrīt",
+    errorAlreadyCancelled: "Rezervācija jau ir atcelta",
+    errorMissingFields: "Lūdzu, aizpildiet visus obligātos laukus",
     errorDefault: "Atcelšana neizdevās",
     errorServer: "Servera kļūda",
   },
@@ -36,6 +38,8 @@ const translations = {
     errorMissingPhone: "Enter the phone number",
     errorNotFound: "Reservation not found",
     errorContactMismatch: "Phone number does not match",
+    errorAlreadyCancelled: "Reservation is already cancelled",
+    errorMissingFields: "Please fill in all required fields",
     errorDefault: "Cancellation failed",
     errorServer: "Server error",
   },
@@ -53,6 +57,8 @@ const translations = {
     errorMissingPhone: "Введите номер телефона",
     errorNotFound: "Бронирование не найдено",
     errorContactMismatch: "Номер телефона не совпадает",
+    errorAlreadyCancelled: "Бронирование уже отменено",
+    errorMissingFields: "Пожалуйста, заполните все обязательные поля",
     errorDefault: "Отмена не удалась",
     errorServer: "Ошибка сервера",
   },
@@ -70,10 +76,30 @@ const translations = {
     errorMissingPhone: "Введіть номер телефону",
     errorNotFound: "Бронювання не знайдено",
     errorContactMismatch: "Номер телефону не збігається",
+    errorAlreadyCancelled: "Бронювання вже скасовано",
+    errorMissingFields: "Будь ласка, заповніть усі обов’язкові поля",
     errorDefault: "Скасування не вдалося",
     errorServer: "Помилка сервера",
   },
 } as const;
+
+function getLocalizedCancelError(
+  errorCode: string | undefined,
+  t: (typeof translations)[keyof typeof translations],
+): string {
+  switch (errorCode) {
+    case "NOT_FOUND":
+      return t.errorNotFound;
+    case "CONTACT_MISMATCH":
+      return t.errorContactMismatch;
+    case "ALREADY_CANCELLED":
+      return t.errorAlreadyCancelled;
+    case "MISSING_FIELDS":
+      return t.errorMissingFields;
+    default:
+      return t.errorDefault;
+  }
+}
 
 export default function CancelReservationSection() {
   const { lang } = useContext(LanguageContext);
@@ -132,22 +158,14 @@ export default function CancelReservationSection() {
       }
 
       if (!response.ok || !data.success) {
-        throw new Error(
-          data?.error === "NOT_FOUND"
-            ? t.errorNotFound
-            : data?.error === "CONTACT_MISMATCH"
-              ? t.errorContactMismatch
-              : data?.message || t.errorDefault,
-        );
+        throw new Error(getLocalizedCancelError(data?.error, t));
       }
 
       setSuccess(t.success);
-
       setReservationId("");
       setPhone("");
     } catch (err) {
       console.error(err);
-
       setError(err instanceof Error ? err.message : t.errorDefault);
     } finally {
       setLoading(false);

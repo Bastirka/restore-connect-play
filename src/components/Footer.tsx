@@ -1,7 +1,6 @@
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Phone, MapPin, Clock, Instagram } from "lucide-react";
 import { LanguageContext } from "@/App";
-import { useTranslatedTexts } from "@/hooks/use-translate";
 
 const HOURS_CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vRYKPdl7ZFecNaYuGHbmePFREkzHclGioRQdwEhiDmy_RbvGqiFCuGKz0FOpEDtkXNUE9UEH90PJIOf/pub?gid=0&single=true&output=csv";
@@ -12,11 +11,14 @@ type HourRow = {
   close: string;
 };
 
+type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+
 const translations = {
   lv: {
     brandText: "Kebabi · Rēzekne",
     freshFood: "Svaigs ēdiens katru dienu.",
     address: "Adrese",
+    addressLines: ["Atbrīvošanas aleja 172A", "Rēzekne, LV-4601"],
     workingHours: "Darba laiks",
     contacts: "Kontakti",
     menu: "Ēdienkarte",
@@ -24,11 +26,21 @@ const translations = {
     instagram: "Instagram",
     copyright: "SEDO Restorāns. Visas tiesības aizsargātas.",
     fallbackHours: ["P–Pk: 10:00 – 22:00", "Se: 11:00 – 23:00", "Sv: 11:00 – 21:00"],
+    dayNames: {
+      mon: "Pirmdiena",
+      tue: "Otrdiena",
+      wed: "Trešdiena",
+      thu: "Ceturtdiena",
+      fri: "Piektdiena",
+      sat: "Sestdiena",
+      sun: "Svētdiena",
+    },
   },
   en: {
     brandText: "Kebabs · Rezekne",
     freshFood: "Fresh food every day.",
     address: "Address",
+    addressLines: ["Atbrīvošanas aleja 172A", "Rezekne, LV-4601"],
     workingHours: "Working hours",
     contacts: "Contacts",
     menu: "Menu",
@@ -36,11 +48,21 @@ const translations = {
     instagram: "Instagram",
     copyright: "SEDO Restaurant. All rights reserved.",
     fallbackHours: ["Mon–Fri: 10:00 – 22:00", "Sat: 11:00 – 23:00", "Sun: 11:00 – 21:00"],
+    dayNames: {
+      mon: "Monday",
+      tue: "Tuesday",
+      wed: "Wednesday",
+      thu: "Thursday",
+      fri: "Friday",
+      sat: "Saturday",
+      sun: "Sunday",
+    },
   },
   ru: {
     brandText: "Кебабы · Резекне",
     freshFood: "Свежая еда каждый день.",
     address: "Адрес",
+    addressLines: ["Atbrīvošanas aleja 172A", "Резекне, LV-4601"],
     workingHours: "Часы работы",
     contacts: "Контакты",
     menu: "Меню",
@@ -48,11 +70,21 @@ const translations = {
     instagram: "Instagram",
     copyright: "Ресторан SEDO. Все права защищены.",
     fallbackHours: ["Пн–Пт: 10:00 – 22:00", "Сб: 11:00 – 23:00", "Вс: 11:00 – 21:00"],
+    dayNames: {
+      mon: "Понедельник",
+      tue: "Вторник",
+      wed: "Среда",
+      thu: "Четверг",
+      fri: "Пятница",
+      sat: "Суббота",
+      sun: "Воскресенье",
+    },
   },
   uk: {
     brandText: "Кебаби · Резекне",
     freshFood: "Свіжа їжа щодня.",
     address: "Адреса",
+    addressLines: ["Atbrīvošanas aleja 172A", "Резекне, LV-4601"],
     workingHours: "Години роботи",
     contacts: "Контакти",
     menu: "Меню",
@@ -60,8 +92,47 @@ const translations = {
     instagram: "Instagram",
     copyright: "Ресторан SEDO. Усі права захищені.",
     fallbackHours: ["Пн–Пт: 10:00 – 22:00", "Сб: 11:00 – 23:00", "Нд: 11:00 – 21:00"],
+    dayNames: {
+      mon: "Понеділок",
+      tue: "Вівторок",
+      wed: "Середа",
+      thu: "Четвер",
+      fri: "П’ятниця",
+      sat: "Субота",
+      sun: "Неділя",
+    },
   },
 } as const;
+
+const DAY_ALIASES: Record<DayKey, string[]> = {
+  mon: ["mon", "monday", "pirmdiena", "понедельник", "понеділок"],
+  tue: ["tue", "tuesday", "otrdiena", "вторник", "вівторок"],
+  wed: ["wed", "wednesday", "trešdiena", "tresdiena", "среда", "середа"],
+  thu: ["thu", "thursday", "ceturtdiena", "четверг", "четвер"],
+  fri: ["fri", "friday", "piektdiena", "пятница", "п’ятниця", "pyatnytsia"],
+  sat: ["sat", "saturday", "sestdiena", "суббота", "субота"],
+  sun: ["sun", "sunday", "svētdiena", "svetdiena", "воскресенье", "неділя"],
+};
+
+function normalizeText(value: string) {
+  return String(value || "")
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function getDayKey(day: string): DayKey | null {
+  const normalized = normalizeText(day);
+
+  for (const [dayKey, aliases] of Object.entries(DAY_ALIASES) as [DayKey, string[]][]) {
+    if (aliases.some((alias) => normalized === alias)) {
+      return dayKey;
+    }
+  }
+
+  return null;
+}
 
 function parseCsvLine(line: string) {
   const result: string[] = [];
@@ -135,9 +206,6 @@ const Footer = () => {
     loadHours();
   }, []);
 
-  const dayNames = useMemo(() => hours.map((h) => h.day), [hours]);
-  const translatedDays = useTranslatedTexts(dayNames);
-
   return (
     <footer className="border-t border-border/50 py-16">
       <div className="container">
@@ -157,9 +225,9 @@ const Footer = () => {
               {t.address}
             </h4>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Atbrīvošanas aleja 172A
+              {t.addressLines[0]}
               <br />
-              Rēzekne, LV-4601
+              {t.addressLines[1]}
             </p>
           </div>
 
@@ -171,11 +239,16 @@ const Footer = () => {
 
             <div className="space-y-1 text-sm text-muted-foreground">
               {hours.length > 0
-                ? hours.map((item, i) => (
-                    <p key={item.day}>
-                      {translatedDays[i] ?? item.day}: {item.open} – {item.close}
-                    </p>
-                  ))
+                ? hours.map((item) => {
+                    const dayKey = getDayKey(item.day);
+                    const dayLabel = dayKey ? t.dayNames[dayKey] : item.day;
+
+                    return (
+                      <p key={`${item.day}-${item.open}-${item.close}`}>
+                        {dayLabel}: {item.open} – {item.close}
+                      </p>
+                    );
+                  })
                 : t.fallbackHours.map((row) => <p key={row}>{row}</p>)}
             </div>
           </div>
