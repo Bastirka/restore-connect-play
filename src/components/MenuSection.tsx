@@ -357,7 +357,7 @@ function fixLatvianDescription(text: string) {
 function shouldTranslateGroupName(name: string) {
   const value = normalizeText(name);
 
-  const preserveList = ["iskender", "pide", "pizza", "falafel"];
+  const preserveList = ["iskender", "pizza", "falafel"];
 
   return !preserveList.some((word) => value.includes(word));
 }
