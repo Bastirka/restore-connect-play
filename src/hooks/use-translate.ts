@@ -513,6 +513,11 @@ export function useTranslatedTexts(texts: string[]) {
 
   const normalizedTexts = useMemo(() => normalizeTexts(texts), [texts]);
 
+  // Reset translations immediately when language changes to prevent mixed languages
+  useEffect(() => {
+    setTranslatedTexts([]);
+  }, [lang]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -548,5 +553,6 @@ export function useTranslatedTexts(texts: string[]) {
     };
   }, [lang, normalizedTexts]);
 
-  return translatedTexts.length ? translatedTexts : normalizedTexts;
+  // While translations are loading, return original texts (LV) instead of stale translations
+  return translatedTexts.length === normalizedTexts.length ? translatedTexts : normalizedTexts;
 }
