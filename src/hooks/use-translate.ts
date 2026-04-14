@@ -208,7 +208,12 @@ const MANUAL_TRANSLATIONS: Record<string, Partial<Record<SupportedLang, string>>
 };
 
 const memoryCache = new Map<string, string>();
-const LS_PREFIX = "tr_v9_";
+const LS_PREFIX = "tr_v10_";
+
+type TranslationState = {
+  requestKey: string;
+  texts: string[];
+};
 
 function normalizeTexts(texts: string[]) {
   return texts.map((text) => String(text ?? "").trim());
@@ -224,11 +229,11 @@ function simpleHash(str: string): string {
 }
 
 function cacheKey(text: string, lang: string): string {
-  return `${text}::${lang}`;
+  return `${lang}::${text}`;
 }
 
 function getLsKey(text: string, lang: string): string {
-  return LS_PREFIX + simpleHash(`${text}::${lang}`);
+  return LS_PREFIX + simpleHash(`${lang}::${text}`);
 }
 
 function getCached(text: string, lang: string): string | null {
@@ -245,7 +250,7 @@ function getCached(text: string, lang: string): string | null {
       return stored;
     }
   } catch {
-    //
+    // ignore storage errors
   }
 
   return null;
@@ -258,7 +263,7 @@ function setCache(text: string, lang: string, translated: string) {
   try {
     localStorage.setItem(getLsKey(text, lang), translated);
   } catch {
-    //
+    // ignore storage errors
   }
 }
 
@@ -353,67 +358,13 @@ async function translateBatchWithSource(
   });
 }
 
-async function translateWithPublicFallback(texts: string[], targetLang: SupportedLang): Promise<string[]> {
-  if (!texts.length) return texts;
-
-  const CHUNK_SIZE = 12;
-  const DELIMITER = " ||| ";
-  const results: string[] = [];
-
-  for (let i = 0; i < texts.length; i += CHUNK_SIZE) {
-    const chunk = texts.slice(i, i + CHUNK_SIZE);
-    const joined = chunk.join(DELIMITER);
-
-    const url =
-      `https://translate.googleapis.com/translate_a/single` +
-      `?client=gtx&sl=auto&tl=${encodeURIComponent(targetLang)}&dt=t&q=${encodeURIComponent(joined)}`;
-
-    try {
-      const response = await fetch(url, { cache: "no-store" });
-      const data: unknown = await response.json().catch(() => null);
-
-      if (!response.ok || !Array.isArray(data) || !Array.isArray(data[0])) {
-        console.error("Fallback translation API error:", {
-          status: response.status,
-          statusText: response.statusText,
-          data,
-        });
-        results.push(...chunk);
-        continue;
-      }
-
-      const translatedJoined = (data[0] as unknown[])
-        .map((segment) => {
-          if (!Array.isArray(segment)) return "";
-          return String(segment[0] ?? "");
-        })
-        .join("");
-
-      const translatedChunk = translatedJoined
-        .split(DELIMITER)
-        .slice(0, chunk.length)
-        .map((value) => decodeHtmlEntities(value));
-
-      if (translatedChunk.length !== chunk.length) {
-        results.push(...chunk);
-        continue;
-      }
-
-      results.push(...translatedChunk);
-    } catch (error) {
-      console.error("Fallback translation chunk failed:", error);
-      results.push(...chunk);
-    }
-  }
-
-  return results;
-}
-
 export async function batchTranslate(texts: string[], targetLang: string): Promise<string[]> {
   const safeTexts = normalizeTexts(texts);
   const apiLang = mapLangCode(targetLang);
 
-  if (!safeTexts.length) return safeTexts;
+  if (!safeTexts.length || apiLang === "lv") {
+    return safeTexts;
+  }
 
   const results: string[] = [...safeTexts];
   const uncached: { index: number; text: string }[] = [];
@@ -447,7 +398,7 @@ export async function batchTranslate(texts: string[], targetLang: string): Promi
     uncached.push({ index, text });
   });
 
-  if (!uncached.length) {
+  if (!uncached.length || !GOOGLE_TRANSLATE_API_KEY) {
     return results;
   }
 
@@ -455,9 +406,9 @@ export async function batchTranslate(texts: string[], targetLang: string): Promi
 
   uncached.forEach(({ text }) => {
     const source = detectSourceLang(text);
-    const arr = sourceBuckets.get(source) || [];
-    if (!arr.includes(text)) arr.push(text);
-    sourceBuckets.set(source, arr);
+    const bucket = sourceBuckets.get(source) || [];
+    if (!bucket.includes(text)) bucket.push(text);
+    sourceBuckets.set(source, bucket);
   });
 
   const translatedMap = new Map<string, string>();
@@ -465,35 +416,21 @@ export async function batchTranslate(texts: string[], targetLang: string): Promi
   try {
     const BATCH_SIZE = 50;
 
-    if (GOOGLE_TRANSLATE_API_KEY) {
-      for (const [sourceLang, uniqueTexts] of sourceBuckets.entries()) {
-        for (let i = 0; i < uniqueTexts.length; i += BATCH_SIZE) {
-          const batch = uniqueTexts.slice(i, i + BATCH_SIZE);
-          const translatedBatch = await translateBatchWithSource(batch, sourceLang, apiLang);
+    for (const [sourceLang, uniqueTexts] of sourceBuckets.entries()) {
+      for (let i = 0; i < uniqueTexts.length; i += BATCH_SIZE) {
+        const batch = uniqueTexts.slice(i, i + BATCH_SIZE);
+        const translatedBatch = await translateBatchWithSource(batch, sourceLang, apiLang);
 
-          if (!translatedBatch) {
-            continue;
-          }
-
-          batch.forEach((originalText, index) => {
-            const decoded = translatedBatch[index] || originalText;
-            translatedMap.set(originalText, decoded);
-            setCache(originalText, apiLang, decoded);
-          });
+        if (!translatedBatch) {
+          continue;
         }
+
+        batch.forEach((originalText, index) => {
+          const decoded = translatedBatch[index] || originalText;
+          translatedMap.set(originalText, decoded);
+          setCache(originalText, apiLang, decoded);
+        });
       }
-    }
-
-    const stillMissing = uncached.map((item) => item.text).filter((text) => !translatedMap.has(text));
-
-    if (stillMissing.length) {
-      const fallbackTranslated = await translateWithPublicFallback(stillMissing, apiLang);
-
-      stillMissing.forEach((originalText, index) => {
-        const translated = fallbackTranslated[index] || originalText;
-        translatedMap.set(originalText, translated);
-        setCache(originalText, apiLang, translated);
-      });
     }
 
     uncached.forEach(({ index, text }) => {
@@ -503,45 +440,47 @@ export async function batchTranslate(texts: string[], targetLang: string): Promi
     return results;
   } catch (error) {
     console.error("Translation failed:", error);
-    return safeTexts;
+    return results;
   }
 }
 
-export function useTranslatedTexts(texts: string[]) {
+export function useTranslatedTextsState(texts: string[]) {
   const { lang } = useContext(LanguageContext);
-  const [translatedTexts, setTranslatedTexts] = useState<string[]>([]);
-
+  const activeLang = mapLangCode(lang);
   const normalizedTexts = useMemo(() => normalizeTexts(texts), [texts]);
-
-  // Reset translations immediately when language changes to prevent mixed languages
-  useEffect(() => {
-    setTranslatedTexts([]);
-  }, [lang]);
+  const requestKey = useMemo(() => `${activeLang}::${normalizedTexts.join("\u241F")}`, [activeLang, normalizedTexts]);
+  const [state, setState] = useState<TranslationState>({
+    requestKey: "",
+    texts: [],
+  });
 
   useEffect(() => {
     let cancelled = false;
 
     async function run() {
       if (!normalizedTexts.length) {
-        setTranslatedTexts([]);
+        setState({ requestKey, texts: [] });
         return;
       }
 
-      if (lang === "lv") {
-        setTranslatedTexts(normalizedTexts);
+      if (activeLang === "lv") {
+        setState({ requestKey, texts: normalizedTexts });
         return;
       }
+
+      setState({ requestKey, texts: [] });
 
       try {
-        const translated = await batchTranslate(normalizedTexts, lang);
+        const translated = await batchTranslate(normalizedTexts, activeLang);
 
         if (!cancelled) {
-          setTranslatedTexts(translated);
+          setState({ requestKey, texts: translated });
         }
       } catch (error) {
         console.error("Translation hook failed:", error);
+
         if (!cancelled) {
-          setTranslatedTexts(normalizedTexts);
+          setState({ requestKey, texts: normalizedTexts });
         }
       }
     }
@@ -551,8 +490,18 @@ export function useTranslatedTexts(texts: string[]) {
     return () => {
       cancelled = true;
     };
-  }, [lang, normalizedTexts]);
+  }, [activeLang, normalizedTexts, requestKey]);
 
-  // While translations are loading, return original texts (LV) instead of stale translations
-  return translatedTexts.length === normalizedTexts.length ? translatedTexts : normalizedTexts;
+  const currentTexts = state.requestKey === requestKey ? state.texts : [];
+  const isReady =
+    activeLang === "lv" || !normalizedTexts.length || currentTexts.length === normalizedTexts.length;
+
+  return {
+    texts: isReady ? currentTexts : [],
+    isReady,
+  };
+}
+
+export function useTranslatedTexts(texts: string[]) {
+  return useTranslatedTextsState(texts).texts;
 }

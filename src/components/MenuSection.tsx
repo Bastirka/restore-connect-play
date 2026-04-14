@@ -1,7 +1,7 @@
 import React, { memo, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Utensils } from "lucide-react";
 import { LanguageContext } from "@/App";
-import { useTranslatedTexts } from "@/hooks/use-translate";
+import { useTranslatedTextsState } from "@/hooks/use-translate";
 
 const MENU_CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vRYKPdl7ZFecNaYuGHbmePFREkzHclGioRQdwEhiDmy_RbvGqiFCuGKz0FOpEDtkXNUE9UEH90PJIOf/pub?gid=1173998322&single=true&output=csv";
@@ -20,12 +20,13 @@ const translations = {
     categories: {
       kebabi: "Kebabi",
       burgeri: "Burgeri",
+      picas: "Picas",
+      pide: "Pide",
       salads: "Salāti",
+      vegetarian: "Veģetārie ēdieni",
+      kids: "Bērnu ēdienkarte",
       dzerieni: "Dzērieni",
       deserti: "Deserti",
-      kids: "Bērnu ēdienkarte",
-      vegetarian: "Veģetārie ēdieni",
-      pide: "Pide",
     },
     placeholderAlt: "Ēdiena attēls",
   },
@@ -37,12 +38,13 @@ const translations = {
     categories: {
       kebabi: "Kebabs",
       burgeri: "Burgers",
+      picas: "Pizzas",
+      pide: "Pide",
       salads: "Salads",
+      vegetarian: "Vegetarian dishes",
+      kids: "Kids menu",
       dzerieni: "Drinks",
       deserti: "Desserts",
-      kids: "Kids menu",
-      vegetarian: "Vegetarian dishes",
-      pide: "Pide",
     },
     placeholderAlt: "Food image",
   },
@@ -54,12 +56,13 @@ const translations = {
     categories: {
       kebabi: "Кебабы",
       burgeri: "Бургеры",
+      picas: "Пиццы",
+      pide: "Пиде",
       salads: "Салаты",
+      vegetarian: "Вегетарианские блюда",
+      kids: "Детское меню",
       dzerieni: "Напитки",
       deserti: "Десерты",
-      kids: "Детское меню",
-      vegetarian: "Вегетарианские блюда",
-      pide: "Пиде",
     },
     placeholderAlt: "Изображение блюда",
   },
@@ -71,12 +74,13 @@ const translations = {
     categories: {
       kebabi: "Кебаби",
       burgeri: "Бургери",
+      picas: "Піци",
+      pide: "Піде",
       salads: "Салати",
+      vegetarian: "Вегетаріанські страви",
+      kids: "Дитяче меню",
       dzerieni: "Напої",
       deserti: "Десерти",
-      kids: "Дитяче меню",
-      vegetarian: "Вегетаріанські страви",
-      pide: "Піде",
     },
     placeholderAlt: "Зображення страви",
   },
@@ -92,7 +96,8 @@ type MenuItem = {
   image: string;
 };
 
-const categoryOrder = ["kebabi", "burgeri", "pide", "salads", "vegetarian", "kids", "dzerieni", "deserti"] as const;
+const categoryOrder = ["kebabi", "burgeri", "picas", "pide", "salads", "vegetarian", "kids", "dzerieni", "deserti"] as const;
+type CategoryKey = (typeof categoryOrder)[number];
 
 function normalizeText(value: string) {
   return String(value || "")
@@ -147,86 +152,36 @@ function parseCsvLine(line: string) {
   return result.map((v) => v.replace(/^"|"$/g, ""));
 }
 
+const CATEGORY_ALIASES: Record<CategoryKey, string[]> = {
+  kebabi: ["kebabi", "kebabs", "kebab", "кебаб"],
+  burgeri: ["burgeri", "burgers", "burger", "бургер"],
+  picas: ["picas", "pizza", "pizzas", "pica", "пиц", "піц"],
+  pide: ["pide", "пиде", "піде"],
+  salads: ["salads", "salad", "salati", "salatii", "salat", "салат"],
+  vegetarian: ["vegetarian", "vegetarie", "вегет"],
+  kids: ["kids", "kid", "bernu", "дет", "дит"],
+  dzerieni: ["dzerieni", "drink", "drinks", "dzēr", "dzer", "напит", "напої"],
+  deserti: ["deserti", "dessert", "desserts", "desert", "десерт"],
+};
+
 function normalizeCategory(category: string) {
-  const c = normalizeText(category);
+  const normalized = normalizeText(category);
 
-  if (c === "kebabi" || c === "kebabs" || c === "kebab" || c.includes("kebab") || c.includes("кебаб")) {
-    return "kebabi";
+  if (!normalized) {
+    return "";
   }
 
-  if (c === "burgeri" || c === "burgers" || c === "burger" || c.includes("burger") || c.includes("бургер")) {
-    return "burgeri";
+  for (const categoryKey of categoryOrder) {
+    if (normalized === categoryKey) {
+      return categoryKey;
+    }
+
+    if (CATEGORY_ALIASES[categoryKey].some((alias) => normalized === alias || normalized.includes(alias))) {
+      return categoryKey;
+    }
   }
 
-  if (
-    c === "picas" ||
-    c === "pizza" ||
-    c === "pizzas" ||
-    c === "pica" ||
-    c.includes("pizza") ||
-    c.includes("pica") ||
-    c.includes("пиц") ||
-    c.includes("піц")
-  ) {
-    return "picas";
-  }
-
-  if (c === "pide" || c.includes("pide") || c.includes("пиде") || c.includes("піде")) {
-    return "pide";
-  }
-
-  if (
-    c === "salads" ||
-    c === "salad" ||
-    c === "salati" ||
-    c === "salatii" ||
-    c.includes("salad") ||
-    c.includes("salat") ||
-    c.includes("салат")
-  ) {
-    return "salads";
-  }
-
-  if (c === "vegetarian" || c.includes("vegetarian") || c.includes("vegetarie") || c.includes("вегет")) {
-    return "vegetarian";
-  }
-
-  if (
-    c === "kids" ||
-    c.includes("kids") ||
-    c.includes("kid") ||
-    c.includes("bernu") ||
-    c.includes("дет") ||
-    c.includes("дит")
-  ) {
-    return "kids";
-  }
-
-  if (
-    c === "dzerieni" ||
-    c === "drink" ||
-    c === "drinks" ||
-    c.includes("drink") ||
-    c.includes("dzēr") ||
-    c.includes("dzer") ||
-    c.includes("напит") ||
-    c.includes("напої")
-  ) {
-    return "dzerieni";
-  }
-
-  if (
-    c === "deserti" ||
-    c === "dessert" ||
-    c === "desserts" ||
-    c.includes("dessert") ||
-    c.includes("desert") ||
-    c.includes("десерт")
-  ) {
-    return "deserti";
-  }
-
-  return c;
+  return normalized;
 }
 
 function capitalizeFirst(text: string) {
@@ -357,7 +312,7 @@ function fixLatvianDescription(text: string) {
 function shouldTranslateGroupName(name: string) {
   const value = normalizeText(name);
 
-  const preserveList = ["iskender", "pizza", "falafel"];
+  const preserveList = ["iskender", "falafel"];
 
   return !preserveList.some((word) => value.includes(word));
 }
@@ -532,7 +487,7 @@ const MenuSection = () => {
               image: optimizeImageUrl(override || csvImage),
             };
           })
-          .filter((item) => item.category && item.groupName && item.category !== "picas");
+          .filter((item) => item.category && item.groupName);
 
         if (isMounted) {
           setMenuItems(data);
@@ -559,29 +514,39 @@ const MenuSection = () => {
 
   const shouldTranslate = safeLang !== "lv";
 
+  const sourceItems = useMemo(
+    () =>
+      menuItems.map((item) => ({
+        ...item,
+        groupName: fixLatvianGroupName(item.groupName),
+        variantName: fixLatvianVariantName(item.variantName),
+        description: fixLatvianDescription(item.description),
+      })),
+    [menuItems],
+  );
+
   const translatableTexts = useMemo(() => {
     if (!shouldTranslate) return [];
 
-    return menuItems.flatMap((item) => [
+    return sourceItems.flatMap((item) => [
       shouldTranslateGroupName(item.groupName) ? item.groupName || "" : "",
       item.variantName || "",
       item.description || "",
     ]);
-  }, [menuItems, shouldTranslate]);
+  }, [sourceItems, shouldTranslate]);
 
-  const translatedTexts = useTranslatedTexts(translatableTexts);
+  const { texts: translatedTexts, isReady: translationsReady } = useTranslatedTextsState(translatableTexts);
 
   const localizedItems = useMemo(() => {
-    return menuItems.map((item, index) => {
-      if (!shouldTranslate) {
-        return {
-          ...item,
-          groupName: fixLatvianGroupName(item.groupName),
-          variantName: fixLatvianVariantName(item.variantName),
-          description: fixLatvianDescription(item.description),
-        };
-      }
+    if (!shouldTranslate) {
+      return sourceItems;
+    }
 
+    if (!translationsReady) {
+      return [];
+    }
+
+    return sourceItems.map((item, index) => {
       const translatedGroupName = shouldTranslateGroupName(item.groupName)
         ? translatedTexts[index * 3] || item.groupName
         : translatePreservedFoodName(item.groupName, safeLang);
@@ -593,7 +558,7 @@ const MenuSection = () => {
         description: translatedTexts[index * 3 + 2] || item.description,
       };
     });
-  }, [menuItems, translatedTexts, shouldTranslate, safeLang]);
+  }, [sourceItems, translatedTexts, translationsReady, shouldTranslate, safeLang]);
 
   const groupedByCategory = useMemo(() => {
     const result: Record<string, MenuItem[]> = {};
@@ -644,7 +609,7 @@ const MenuSection = () => {
     return () => window.clearTimeout(timeout);
   }, [openCategory]);
 
-  if (loading) {
+  if (loading || (shouldTranslate && !translationsReady)) {
     return (
       <section id="menu" className="py-24">
         <div className="container">
