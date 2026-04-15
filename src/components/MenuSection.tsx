@@ -87,7 +87,7 @@ type LangKey = keyof typeof translations;
 type MenuItem = {
   id: string;
   category: string;
-  categoryLabel?: string;
+  categoryLabel: string;
   groupName: string;
   variantName: string;
   description: string;
