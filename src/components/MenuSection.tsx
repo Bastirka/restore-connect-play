@@ -3,7 +3,7 @@ import { ChevronDown, Utensils } from "lucide-react";
 import { LanguageContext } from "@/App";
 
 const MENU_API_URL =
-  "https://script.google.com/macros/s/AKfycbzjuO9vq6uZwwjHglxx3YiPukCku0hcWd6uLRiUE2gVume4GNZ6Ei1kCjMWlmgv3zJe3A/exec?action=getMenu&lang=lv";
+  "https://script.google.com/macros/s/AKfycbzjuO9vq6uZwwjHglxx3YiPukCku0hcWd6uLRiUE2gVume4GNZ6Ei1kCjMWlmgv3zJe3A/exec";
 
 const R2_BASE_URL = "https://pub-ce27dafe278d4f219c7c1ca812bee1fb.r2.dev";
 
