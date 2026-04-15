@@ -264,36 +264,57 @@ const MenuSection = () => {
         setLoading(true);
 
         const url = `${MENU_API_URL}?action=getMenu&lang=${encodeURIComponent(safeLang)}`;
+        console.log("[Menu] Fetching:", url);
+
         const res = await fetch(url, {
           signal: controller.signal,
-          cache: "no-store",
+          redirect: "follow",
         });
 
         if (!res.ok) {
           throw new Error(`Failed to load menu: ${res.status}`);
         }
 
-        const data = await res.json();
+        const text = await res.text();
+        console.log("[Menu] Raw response length:", text.length, "preview:", text.slice(0, 200));
 
-        if (!Array.isArray(data)) {
-          throw new Error("Menu API response is not array");
+        let data: any;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          console.error("[Menu] Response is not valid JSON:", text.slice(0, 500));
+          if (isMounted) { setMenuItems([]); setLoading(false); }
+          return;
         }
 
+        if (!Array.isArray(data)) {
+          console.error("[Menu] Response is not an array:", typeof data, data);
+          if (isMounted) { setMenuItems([]); setLoading(false); }
+          return;
+        }
+
+        console.log("[Menu] Got", data.length, "raw items. First:", data[0]);
+
         const normalized: MenuItem[] = data
-          .map((item: any, index: number) => ({
-            id: String(
-              item.id ||
-                `${item.category || ""}-${item.groupName || ""}-${item.variantName || ""}-${item.price || ""}-${index}`,
-            ).trim(),
-            category: String(item.category || "").trim(),
-            categoryLabel: String(item.categoryLabel || "").trim(),
-            groupName: String(item.groupName || "").trim(),
-            variantName: String(item.variantName || "").trim(),
-            description: String(item.description || "").trim(),
-            price: String(item.price || "").trim(),
-            image: resolveMenuImageUrl(String(item.image || item.images || "").trim()),
-          }))
+          .map((item: any, index: number) => {
+            const rawCategory = String(item.category || "").trim().toLowerCase();
+            return {
+              id: String(
+                item.id ||
+                  `${rawCategory}-${item.groupName || ""}-${item.variantName || ""}-${item.price || ""}-${index}`,
+              ).trim(),
+              category: rawCategory,
+              categoryLabel: String(item.categoryLabel || "").trim(),
+              groupName: String(item.groupName || item.name || "").trim(),
+              variantName: String(item.variantName || item.variant || "").trim(),
+              description: String(item.description || "").trim(),
+              price: String(item.price || "").trim(),
+              image: resolveMenuImageUrl(String(item.image || item.images || "").trim()),
+            };
+          })
           .filter((item) => item.category && item.groupName);
+
+        console.log("[Menu] Normalized items:", normalized.length, "categories:", [...new Set(normalized.map(i => i.category))]);
 
         if (isMounted) {
           setMenuItems(normalized);
@@ -301,7 +322,7 @@ const MenuSection = () => {
         }
       } catch (error: any) {
         if (error?.name !== "AbortError") {
-          console.error("Failed to load menu:", error);
+          console.error("[Menu] Failed to load menu:", error);
           if (isMounted) {
             setMenuItems([]);
             setLoading(false);
