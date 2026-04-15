@@ -3,7 +3,8 @@ import { ChevronDown, Utensils } from "lucide-react";
 import { LanguageContext } from "@/App";
 
 const MENU_API_URL =
-  "https://script.google.com/macros/s/AKfycbytEAREKofYWzAyo11ERnY-n6F76vp-w9-_8JidtQHX2cSB-ehWtO5P2jlx27NQPGe9vA/exec";
+  "https://script.google.com/macros/s/AKfycbx7oWysmTQu2WRjBh1D3ll58ro1KJ2J5UiO4BnFBHeu7HC1yAH-y_R_CohNGok-gAybYg/exec";
+
 const R2_BASE_URL = "https://pub-ce27dafe278d4f219c7c1ca812bee1fb.r2.dev";
 
 const translations = {
@@ -80,6 +81,8 @@ const translations = {
     placeholderAlt: "Зображення страви",
   },
 } as const;
+
+type LangKey = keyof typeof translations;
 
 type MenuItem = {
   id: string;
@@ -236,8 +239,10 @@ const MenuImage = memo(function MenuImage({
 
 const MenuSection = () => {
   const { lang } = useContext(LanguageContext);
-  const safeLang = (lang as keyof typeof translations) || "lv";
-  const t = translations[safeLang] || translations.lv;
+
+  const safeLang: LangKey = lang === "lv" || lang === "en" || lang === "ru" || lang === "uk" ? lang : "lv";
+
+  const t = translations[safeLang];
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
