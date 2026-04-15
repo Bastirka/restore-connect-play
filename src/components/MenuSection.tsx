@@ -1,15 +1,11 @@
 import React, { memo, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Utensils } from "lucide-react";
 import { LanguageContext } from "@/App";
-import { useTranslatedTextsState } from "@/hooks/use-translate";
 
-const MENU_CSV_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vRYKPdl7ZFecNaYuGHbmePFREkzHclGioRQdwEhiDmy_RbvGqiFCuGKz0FOpEDtkXNUE9UEH90PJIOf/pub?gid=1173998322&single=true&output=csv";
+const MENU_API_URL =
+  "https://script.google.com/macros/s/AKfycby2xrL8XYepyO4mHXeuxUiK3o9jpib133C-vUlMJosmZhTs5P-rO_O5a1AsUnFgUW2w8Q/exec";
 
-const IMAGE_OVERRIDES: Record<string, string> = {
-  "mini kebab": "https://i.postimg.cc/ZY71vfxb/Image-17-03-2026-at-18-21-(47).png",
-  "mazais kebabs": "https://i.postimg.cc/ZY71vfxb/Image-17-03-2026-at-18-21-(47).png",
-};
+const R2_BASE_URL = "https://pub-ce27dafe278d4f219c7c1ca812bee1fb.r2.dev";
 
 const translations = {
   lv: {
@@ -86,18 +82,31 @@ const translations = {
   },
 } as const;
 
+type LangKey = keyof typeof translations;
+
 type MenuItem = {
   id: string;
   category: string;
+  categoryLabel?: string;
   groupName: string;
   variantName: string;
   description: string;
   price: string;
   image: string;
+  sortOrder: number;
 };
 
-const categoryOrder = ["kebabi", "burgeri", "picas", "pide", "salads", "vegetarian", "kids", "dzerieni", "deserti"] as const;
-type CategoryKey = (typeof categoryOrder)[number];
+const categoryOrder = [
+  "kebabi",
+  "burgeri",
+  "picas",
+  "pide",
+  "salads",
+  "vegetarian",
+  "kids",
+  "dzerieni",
+  "deserti",
+] as const;
 
 function normalizeText(value: string) {
   return String(value || "")
@@ -105,83 +114,6 @@ function normalizeText(value: string) {
     .trim()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
-}
-
-function getImageOverride(groupName: string, variantName?: string) {
-  const g = normalizeText(groupName || "");
-  const v = normalizeText(variantName || "");
-  return IMAGE_OVERRIDES[g] || IMAGE_OVERRIDES[v] || "";
-}
-
-function optimizeImageUrl(url: string) {
-  if (!url) return "";
-
-  try {
-    const parsed = new URL(url);
-    return parsed.toString();
-  } catch {
-    return url;
-  }
-}
-
-function parseCsvLine(line: string) {
-  const result: string[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    const next = line[i + 1];
-
-    if (char === '"') {
-      if (inQuotes && next === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char === "," && !inQuotes) {
-      result.push(current.trim());
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-
-  result.push(current.trim());
-  return result.map((v) => v.replace(/^"|"$/g, ""));
-}
-
-const CATEGORY_ALIASES: Record<CategoryKey, string[]> = {
-  kebabi: ["kebabi", "kebabs", "kebab", "кебаб"],
-  burgeri: ["burgeri", "burgers", "burger", "бургер"],
-  picas: ["picas", "pizza", "pizzas", "pica", "пиц", "піц"],
-  pide: ["pide", "пиде", "піде"],
-  salads: ["salads", "salad", "salati", "salatii", "salat", "салат"],
-  vegetarian: ["vegetarian", "vegetarie", "вегет"],
-  kids: ["kids", "kid", "bernu", "дет", "дит"],
-  dzerieni: ["dzerieni", "drink", "drinks", "dzēr", "dzer", "напит", "напої"],
-  deserti: ["deserti", "dessert", "desserts", "desert", "десерт"],
-};
-
-function normalizeCategory(category: string) {
-  const normalized = normalizeText(category);
-
-  if (!normalized) {
-    return "";
-  }
-
-  for (const categoryKey of categoryOrder) {
-    if (normalized === categoryKey) {
-      return categoryKey;
-    }
-
-    if (CATEGORY_ALIASES[categoryKey].some((alias) => normalized === alias || normalized.includes(alias))) {
-      return categoryKey;
-    }
-  }
-
-  return normalized;
 }
 
 function capitalizeFirst(text: string) {
@@ -206,128 +138,22 @@ function addPreconnect(url: string) {
   }
 }
 
-function fixLatvianGroupName(name: string) {
-  const normalized = normalizeText(name);
+function resolveMenuImageUrl(imageValue: string) {
+  const value = String(imageValue || "").trim();
+  if (!value) return "";
 
-  const map: Record<string, string> = {
-    "kebaba rullitis": "Kebabs lavašā",
-    "kebaba rullītis": "Kebabs lavašā",
-    "kebab rullitis": "Kebabs lavašā",
-    "kebab rullītis": "Kebabs lavašā",
-    wrap: "Kebabs lavašā",
-    "kebab wrap": "Kebabs lavašā",
-    "iskender kebab": "Iskender kebabs",
-    "mini kebab": "Mini kebabs",
-    "mazais kebabs": "Mazais kebabs",
-  };
-
-  return map[normalized] || name;
-}
-
-function fixLatvianVariantName(name: string) {
-  const normalized = normalizeText(name);
-
-  const map: Record<string, string> = {
-    "liellopu gala": "Liellopa gaļa",
-    "liellopa gala": "Liellopa gaļa",
-    "liellopu gaļa": "Liellopa gaļa",
-    "vistas gala": "Vistas gaļa",
-    sajauc: "Mix gaļa",
-    mix: "Mix gaļa",
-    mixed: "Mix gaļa",
-    "liellopu gala + siers": "Liellopa gaļa + siers",
-    "liellopa gala + siers": "Liellopa gaļa + siers",
-    "vistas gala + siers": "Vistas gaļa + siers",
-    "sajauc + siers": "Mix gaļa + siers",
-    "mix + siers": "Mix gaļa + siers",
-    "liellopa gala + fri": "Liellopa gaļa + frī",
-    "liellopa gala + frī": "Liellopa gaļa + frī",
-    "vistas gala + fri": "Vistas gaļa + frī",
-    "vistas gala + frī": "Vistas gaļa + frī",
-    "mix + fri": "Mix gaļa + frī",
-    "mix + frī": "Mix gaļa + frī",
-    "liellopa gala + risi": "Liellopa gaļa + rīsi",
-    "liellopa gala + rīsi": "Liellopa gaļa + rīsi",
-    "vistas gala + risi": "Vistas gaļa + rīsi",
-    "vistas gala + rīsi": "Vistas gaļa + rīsi",
-    "mix + risi": "Mix gaļa + rīsi",
-    "mix + rīsi": "Mix gaļa + rīsi",
-  };
-
-  return map[normalized] || name;
-}
-
-function fixLatvianDescription(text: string) {
-  if (!text) return "";
-
-  const normalized = normalizeText(text);
-
-  const exactMap: Record<string, string> = {
-    "liela liellopa gaļas kebaba rullīte": "Liels kebabs lavašā ar liellopa gaļu.",
-    "liela liellopa galas kebaba rullite": "Liels kebabs lavašā ar liellopa gaļu.",
-    "lielais mix kebab rullītis": "Liels kebabs lavašā ar mix gaļu.",
-    "lielais mix kebab rullitis": "Liels kebabs lavašā ar mix gaļu.",
-    "lielais vistas kebabs rullītis": "Liels kebabs lavašā ar vistas gaļu.",
-    "lielais vistas kebabs rullitis": "Liels kebabs lavašā ar vistas gaļu.",
-    "liels vistas kebabs ar sieru": "Liels kebabs lavašā ar vistas gaļu un sieru.",
-    "liels liellopa kebabs ar sieru": "Liels kebabs lavašā ar liellopa gaļu un sieru.",
-    "liels mix kebabs ar sieru": "Liels kebabs lavašā ar mix gaļu un sieru.",
-    "lielais mix kebabs": "Liels kebabs lavašā ar mix gaļu.",
-    "lielais vistas kebabs": "Liels kebabs lavašā ar vistas gaļu.",
-    "lielais liellopa kebabs": "Liels kebabs lavašā ar liellopa gaļu.",
-    "big mix iskender kebabs": "Liels Iskender kebabs ar mix gaļu.",
-    "lielais vistas iskender kebabs": "Liels Iskender kebabs ar vistas gaļu.",
-    "lielo liellopu galas iskender kebabs": "Liels Iskender kebabs ar liellopa gaļu.",
-  };
-
-  if (exactMap[normalized]) return exactMap[normalized];
-
-  let result = text
-    .replace(/liellopu gaļa/gi, "liellopa gaļa")
-    .replace(/liellopu gala/gi, "liellopa gaļa")
-    .replace(/liellopu galas/gi, "liellopa gaļas")
-    .replace(/vistas gala/gi, "vistas gaļa")
-    .replace(/sajauc/gi, "mix gaļa")
-    .replace(/kebaba rullītis/gi, "kebabs lavašā")
-    .replace(/kebaba rullitis/gi, "kebabs lavašā")
-    .replace(/kebab rullītis/gi, "kebabs lavašā")
-    .replace(/kebab rullitis/gi, "kebabs lavašā")
-    .replace(/rullītis/gi, "kebabs lavašā")
-    .replace(/rullitis/gi, "kebabs lavašā")
-    .trim();
-
-  result = result.replace(/\s+/g, " ");
-
-  if (result && !/[.!?]$/.test(result)) {
-    result += ".";
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
   }
 
-  if (result) {
-    result = result.charAt(0).toUpperCase() + result.slice(1);
-  }
+  const cleaned = value.replace(/^\/+/, "");
 
-  return result;
-}
+  const encodedPath = cleaned
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/");
 
-function shouldTranslateGroupName(name: string) {
-  const value = normalizeText(name);
-
-  const preserveList = ["iskender", "falafel"];
-
-  return !preserveList.some((word) => value.includes(word));
-}
-
-function translatePreservedFoodName(name: string, lang: string) {
-  const value = normalizeText(name);
-
-  if (value === "iskender kebab" || value === "iskender kebabs") {
-    if (lang === "ru") return "Искендер кебаб";
-    if (lang === "uk") return "Іскендер кебаб";
-    if (lang === "en") return "Iskender kebab";
-    return "Iskender kebabs";
-  }
-
-  return name;
+  return `${R2_BASE_URL}/${encodedPath}`;
 }
 
 const MenuImage = memo(function MenuImage({
@@ -399,7 +225,7 @@ const MenuImage = memo(function MenuImage({
 
       {shouldLoad ? (
         <img
-          src={optimizeImageUrl(src)}
+          src={src}
           alt={alt}
           width={800}
           height={600}
@@ -421,8 +247,10 @@ const MenuImage = memo(function MenuImage({
 
 const MenuSection = () => {
   const { lang } = useContext(LanguageContext);
-  const safeLang = (lang as keyof typeof translations) || "lv";
-  const t = translations[safeLang] || translations.lv;
+
+  const safeLang: LangKey = lang === "lv" || lang === "en" || lang === "ru" || lang === "uk" ? lang : "lv";
+
+  const t = translations[safeLang];
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -431,7 +259,8 @@ const MenuSection = () => {
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
-    addPreconnect(MENU_CSV_URL);
+    addPreconnect(MENU_API_URL);
+    addPreconnect(R2_BASE_URL);
   }, []);
 
   useEffect(() => {
@@ -440,57 +269,43 @@ const MenuSection = () => {
 
     async function loadMenu() {
       try {
-        const res = await fetch(MENU_CSV_URL, {
-          cache: "force-cache",
+        setLoading(true);
+
+        const url = `${MENU_API_URL}?action=getMenu&lang=${encodeURIComponent(safeLang)}`;
+        const res = await fetch(url, {
           signal: controller.signal,
+          cache: "no-store",
         });
 
-        const text = await res.text();
-
-        if (!isMounted) return;
-
-        const lines = text
-          .split("\n")
-          .map((line) => line.trim())
-          .filter(Boolean);
-
-        if (lines.length < 2) {
-          setMenuItems([]);
-          setLoading(false);
-          return;
+        if (!res.ok) {
+          throw new Error(`Failed to load menu: ${res.status}`);
         }
 
-        const headers = parseCsvLine(lines[0]).map((header) => header.toLowerCase().trim());
+        const data = await res.json();
 
-        const data = lines
-          .slice(1)
-          .map((line) => {
-            const values = parseCsvLine(line);
-            const row: Record<string, string> = {};
+        if (!Array.isArray(data)) {
+          throw new Error("Menu API response is not array");
+        }
 
-            headers.forEach((header, index) => {
-              row[header] = values[index] || "";
-            });
-
-            const groupName = (row.groupname || row.name || "").trim();
-            const variantName = (row.variantname || "").trim();
-            const csvImage = (row.image || "").trim();
-            const override = getImageOverride(groupName, variantName);
-
-            return {
-              id: (row.id || `${row.category || ""}-${groupName}-${variantName}-${row.price || ""}`).trim(),
-              category: normalizeCategory(row.category || ""),
-              groupName,
-              variantName,
-              description: (row.description || "").trim(),
-              price: (row.price || "").trim(),
-              image: optimizeImageUrl(override || csvImage),
-            };
-          })
+        const normalized: MenuItem[] = data
+          .map((item: any, index: number) => ({
+            id: String(
+              item.id ||
+                `${item.category || ""}-${item.groupName || ""}-${item.variantName || ""}-${item.price || ""}-${index}`,
+            ).trim(),
+            category: String(item.category || "").trim(),
+            categoryLabel: String(item.categoryLabel || "").trim(),
+            groupName: String(item.groupName || "").trim(),
+            variantName: String(item.variantName || "").trim(),
+            description: String(item.description || "").trim(),
+            price: String(item.price || "").trim(),
+            image: resolveMenuImageUrl(String(item.image || item.images || "").trim()),
+            sortOrder: Number(item.sortOrder || index + 1),
+          }))
           .filter((item) => item.category && item.groupName);
 
         if (isMounted) {
-          setMenuItems(data);
+          setMenuItems(normalized);
           setLoading(false);
         }
       } catch (error: any) {
@@ -510,60 +325,12 @@ const MenuSection = () => {
       isMounted = false;
       controller.abort();
     };
-  }, []);
-
-  const shouldTranslate = safeLang !== "lv";
-
-  const sourceItems = useMemo(
-    () =>
-      menuItems.map((item) => ({
-        ...item,
-        groupName: fixLatvianGroupName(item.groupName),
-        variantName: fixLatvianVariantName(item.variantName),
-        description: fixLatvianDescription(item.description),
-      })),
-    [menuItems],
-  );
-
-  const translatableTexts = useMemo(() => {
-    if (!shouldTranslate) return [];
-
-    return sourceItems.flatMap((item) => [
-      shouldTranslateGroupName(item.groupName) ? item.groupName || "" : "",
-      item.variantName || "",
-      item.description || "",
-    ]);
-  }, [sourceItems, shouldTranslate]);
-
-  const { texts: translatedTexts, isReady: translationsReady } = useTranslatedTextsState(translatableTexts);
-
-  const localizedItems = useMemo(() => {
-    if (!shouldTranslate) {
-      return sourceItems;
-    }
-
-    if (!translationsReady) {
-      return [];
-    }
-
-    return sourceItems.map((item, index) => {
-      const translatedGroupName = shouldTranslateGroupName(item.groupName)
-        ? translatedTexts[index * 3] || item.groupName
-        : translatePreservedFoodName(item.groupName, safeLang);
-
-      return {
-        ...item,
-        groupName: translatedGroupName,
-        variantName: translatedTexts[index * 3 + 1] || item.variantName,
-        description: translatedTexts[index * 3 + 2] || item.description,
-      };
-    });
-  }, [sourceItems, translatedTexts, translationsReady, shouldTranslate, safeLang]);
+  }, [safeLang]);
 
   const groupedByCategory = useMemo(() => {
     const result: Record<string, MenuItem[]> = {};
 
-    localizedItems.forEach((item) => {
+    menuItems.forEach((item) => {
       if (!result[item.category]) {
         result[item.category] = [];
       }
@@ -572,14 +339,17 @@ const MenuSection = () => {
 
     Object.keys(result).forEach((category) => {
       result[category].sort((a, b) => {
+        if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+
         const first = a.groupName.localeCompare(b.groupName);
         if (first !== 0) return first;
+
         return a.variantName.localeCompare(b.variantName);
       });
     });
 
     return result;
-  }, [localizedItems]);
+  }, [menuItems]);
 
   const sortedCategories = useMemo(() => {
     const ordered = categoryOrder.filter((category) => groupedByCategory[category]?.length);
@@ -609,7 +379,7 @@ const MenuSection = () => {
     return () => window.clearTimeout(timeout);
   }, [openCategory]);
 
-  if (loading || (shouldTranslate && !translationsReady)) {
+  if (loading) {
     return (
       <section id="menu" className="py-24">
         <div className="container">
@@ -628,7 +398,10 @@ const MenuSection = () => {
 
         {sortedCategories.map((category) => {
           const dishes = groupedByCategory[category] || [];
-          const categoryTitle = t.categories[category as keyof typeof t.categories] || capitalizeFirst(category);
+          const categoryTitle =
+            dishes[0]?.categoryLabel ||
+            t.categories[category as keyof typeof t.categories] ||
+            capitalizeFirst(category);
 
           return (
             <div
