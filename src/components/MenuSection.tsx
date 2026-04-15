@@ -87,7 +87,7 @@ type LangKey = keyof typeof translations;
 type MenuItem = {
   id: string;
   category: string;
-  categoryLabel?: string;
+  categoryLabel: string;
   groupName: string;
   variantName: string;
   description: string;
@@ -107,6 +107,53 @@ const categoryOrder = [
   "deserti",
 ] as const;
 
+const categoryAliases: Record<string, (typeof categoryOrder)[number]> = {
+  kebab: "kebabi",
+  kebabs: "kebabi",
+  kebabi: "kebabi",
+  "кебабы": "kebabi",
+  "кебаби": "kebabi",
+  burger: "burgeri",
+  burgers: "burgeri",
+  burgeri: "burgeri",
+  "бургеры": "burgeri",
+  "бургери": "burgeri",
+  pizza: "picas",
+  pizzas: "picas",
+  picas: "picas",
+  "пиццы": "picas",
+  "піци": "picas",
+  pide: "pide",
+  "пиде": "pide",
+  "піде": "pide",
+  salad: "salads",
+  salads: "salads",
+  salati: "salads",
+  "салаты": "salads",
+  "салати": "salads",
+  vegetarian: "vegetarian",
+  "vegetarian dishes": "vegetarian",
+  "vegetarianie edieni": "vegetarian",
+  "vegetarie edieni": "vegetarian",
+  "вегетарианские блюда": "vegetarian",
+  "вегетаріанські страви": "vegetarian",
+  kids: "kids",
+  "kids menu": "kids",
+  "bernu edienkarte": "kids",
+  "детское меню": "kids",
+  "дитяче меню": "kids",
+  dzerieni: "dzerieni",
+  drink: "dzerieni",
+  drinks: "dzerieni",
+  "напитки": "dzerieni",
+  "напої": "dzerieni",
+  dessert: "deserti",
+  desserts: "deserti",
+  deserti: "deserti",
+  "десерты": "deserti",
+  "десерти": "deserti",
+};
+
 function normalizeText(value: string) {
   return String(value || "")
     .toLowerCase()
@@ -118,6 +165,14 @@ function normalizeText(value: string) {
 function capitalizeFirst(text: string) {
   if (!text) return "";
   return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function normalizeCategory(value: string) {
+  const normalized = normalizeText(value).replace(/\s+/g, " ");
+
+  if (!normalized) return "";
+
+  return categoryAliases[normalized] || normalized;
 }
 
 function addPreconnect(url: string) {
@@ -146,6 +201,7 @@ function resolveMenuImageUrl(imageValue: string) {
   }
 
   const encodedPath = value
+    .replace(/^\/+/, "")
     .split("/")
     .map((part) => encodeURIComponent(part))
     .join("/");
@@ -269,36 +325,78 @@ const MenuSection = () => {
         setLoading(true);
 
         const url = `${MENU_API_URL}?action=getMenu&lang=${encodeURIComponent(safeLang)}`;
+        console.log("[Menu] request URL:", url);
+
         const res = await fetch(url, {
           signal: controller.signal,
-          cache: "no-store",
         });
 
+        const rawText = await res.text();
+
         if (!res.ok) {
-          throw new Error(`Failed to load menu: ${res.status}`);
+          console.error("[Menu] request failed:", {
+            status: res.status,
+            statusText: res.statusText,
+            body: rawText,
+          });
+          throw new Error(`Failed to load menu: ${res.status} ${res.statusText}`.trim());
         }
 
-        const data = await res.json();
+        let data: unknown;
+
+        try {
+          data = rawText ? JSON.parse(rawText) : [];
+        } catch (parseError) {
+          console.error("[Menu] invalid JSON response:", rawText);
+          throw parseError;
+        }
+
+        console.log("[Menu] raw API response:", data);
 
         if (!Array.isArray(data)) {
+          console.error("[Menu] expected array response but received:", data);
+
+          if (isMounted) {
+            setMenuItems([]);
+            setLoading(false);
+          }
+
           throw new Error("Menu API response is not array");
         }
 
         const normalized: MenuItem[] = data
-          .map((item: any, index: number) => ({
-            id: String(
-              item.id ||
-                `${item.category || ""}-${item.groupName || ""}-${item.variantName || ""}-${item.price || ""}-${index}`,
-            ).trim(),
-            category: String(item.category || "").trim(),
-            categoryLabel: String(item.categoryLabel || "").trim(),
-            groupName: String(item.groupName || "").trim(),
-            variantName: String(item.variantName || "").trim(),
-            description: String(item.description || "").trim(),
-            price: String(item.price || "").trim(),
-            image: resolveMenuImageUrl(String(item.image || item.images || "").trim()),
-          }))
-          .filter((item) => item.category && item.groupName);
+          .map((item: any, index: number) => {
+            const category = normalizeCategory(String(item?.category || item?.categoryKey || "").trim());
+            const groupName = String(item?.groupName || item?.name || item?.title || "").trim();
+            const isActiveRaw = item?.active;
+            const isActive =
+              isActiveRaw === undefined || isActiveRaw === null || isActiveRaw === ""
+                ? true
+                : isActiveRaw === true ||
+                  String(isActiveRaw).trim().toLowerCase() === "true" ||
+                  String(isActiveRaw).trim() === "1";
+
+            if (!category || !groupName || !isActive) {
+              return null;
+            }
+
+            return {
+              id: String(
+                item?.id ||
+                  `${category}-${groupName}-${item?.variantName || item?.variant || ""}-${item?.price || ""}-${index}`,
+              ).trim(),
+              category,
+              categoryLabel: String(item?.categoryLabel || "").trim(),
+              groupName,
+              variantName: String(item?.variantName || item?.variant || "").trim(),
+              description: String(item?.description || "").trim(),
+              price: String(item?.price || "").trim(),
+              image: resolveMenuImageUrl(String(item?.image || item?.images || item?.imageUrl || "").trim()),
+            };
+          })
+          .filter((item): item is MenuItem => item !== null);
+
+        console.log("[Menu] normalized menu items:", normalized);
 
         if (isMounted) {
           setMenuItems(normalized);
