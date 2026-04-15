@@ -3,7 +3,7 @@ import { ChevronDown, Utensils } from "lucide-react";
 import { LanguageContext } from "@/App";
 
 const MENU_API_URL =
-  "https://script.google.com/macros/s/AKfycbyrsGDZpEz9bmWcbyoZxSwQGCjR7nVaXsC_G68fpWhx9EB0Rdzft-IY1P1aXTXETxdA/exec";
+  "https://script.google.com/macros/s/AKfycby2xrL8XYepyO4mHXeuxUiK3o9jpib133C-vUlMJosmZhTs5P-rO_O5a1AsUnFgUW2w8Q/exec";
 
 const R2_BASE_URL = "https://pub-ce27dafe278d4f219c7c1ca812bee1fb.r2.dev";
 
@@ -145,7 +145,12 @@ function resolveMenuImageUrl(imageValue: string) {
     return value;
   }
 
-  return `${R2_BASE_URL}/${encodeURI(value)}`;
+  const encodedPath = value
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+
+  return `${R2_BASE_URL}/${encodedPath}`;
 }
 
 const MenuImage = memo(function MenuImage({
