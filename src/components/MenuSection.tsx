@@ -68,7 +68,7 @@ const translations = {
   },
   uk: {
     title: "Меню",
-    loading: "Завантажуємо меню...",
+    loading: "Завантажуємо menu...",
     empty: "Меню зараз недоступне.",
     error: "Не вдалося завантажити меню.",
     itemCount: "страви",
@@ -153,12 +153,7 @@ function resolveMenuImageUrl(imageValue: string) {
   }
 
   const cleaned = value.replace(/^\/+/, "");
-  const encodedPath = cleaned
-    .split("/")
-    .map((part) => encodeURIComponent(part))
-    .join("/");
-
-  return `${R2_BASE_URL}/${encodedPath}`;
+  return `${R2_BASE_URL}/${cleaned}`;
 }
 
 const MenuImage = memo(function MenuImage({
