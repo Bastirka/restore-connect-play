@@ -208,7 +208,10 @@ const Footer = () => {
 
   return (
     <footer className="border-t border-border/50 py-16">
-      <div className="container">
+      <div className="container" style={{
+        opacity: 0,
+        animation: 'stagger-fade-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards',
+      }}>
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <span className="font-display text-2xl font-bold text-primary">SEDO</span>

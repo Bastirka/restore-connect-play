@@ -92,3 +92,82 @@ html {
   background: hsl(0 72% 47% / 0.3);
   color: hsl(40 20% 95%);
 }
+
+/* Premium hover effects */
+.luxury-card-hover {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.luxury-card-hover:hover {
+  transform: scale(1.03);
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.4);
+}
+
+.luxury-btn-hover {
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), filter 0.25s ease;
+}
+.luxury-btn-hover:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.luxury-img-hover {
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.luxury-img-hover:hover {
+  transform: scale(1.05);
+}
+
+/* Input focus glow */
+input:focus,
+textarea:focus,
+select:focus {
+  box-shadow: 0 0 0 2px hsl(40 100% 55% / 0.15);
+}
+
+/* Shimmer loading effect */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, transparent 25%, hsl(0 0% 100% / 0.06) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Stagger children animation */
+@keyframes stagger-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.stagger-children > * {
+  opacity: 0;
+  animation: stagger-fade-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Nav link underline animation */
+.nav-link-underline {
+  position: relative;
+}
+.nav-link-underline::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1.5px;
+  background: hsl(var(--primary));
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.nav-link-underline:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}

@@ -1,5 +1,6 @@
-import React, { memo, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { memo, useContext, useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { ChevronDown, Utensils } from "lucide-react";
+import ScrollReveal from "@/components/ScrollReveal";
 import { LanguageContext } from "@/App";
 
 const MENU_API_URL = "https://sedo-menu-proxy.raivisbabris99.workers.dev";
@@ -418,9 +419,9 @@ const MenuSection = () => {
   return (
     <section id="menu" className="py-24">
       <div className="container space-y-6">
-        <div className="mb-4">
+        <ScrollReveal className="mb-4">
           <h2 className="text-3xl font-bold text-white md:text-4xl">{t.title}</h2>
-        </div>
+        </ScrollReveal>
 
         {sortedCategories.map((category) => {
           const dishes = groupedByCategory[category] || [];
@@ -457,7 +458,7 @@ const MenuSection = () => {
               </button>
 
               {openCategory === category && (
-                <div className="grid gap-6 p-6 md:grid-cols-2 xl:grid-cols-3">
+                <div className="stagger-children grid gap-6 p-6 md:grid-cols-2 xl:grid-cols-3">
                   {dishes.map((dish, index) => {
                     const showVariant =
                       dish.variantName &&
@@ -470,7 +471,8 @@ const MenuSection = () => {
                     return (
                       <article
                         key={`${safeLang}-${dish.id}-${index}`}
-                        className="overflow-hidden rounded-xl border border-white/10 bg-black"
+                        className="luxury-card-hover overflow-hidden rounded-xl border border-white/10 bg-black"
+                        style={{ animationDelay: `${index * 0.05}s` }}
                       >
                         <MenuImage
                           src={dish.image}

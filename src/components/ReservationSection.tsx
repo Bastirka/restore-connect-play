@@ -1,4 +1,5 @@
 import { useContext, useEffect, useState } from "react";
+import ScrollReveal from "@/components/ScrollReveal";
 import { CalendarDays, Clock, Users, MessageSquare, Utensils, Send, ChevronDown } from "lucide-react";
 import { LanguageContext } from "@/App";
 import CancelReservationSection from "./CancelReservationSection";
@@ -447,7 +448,7 @@ export default function ReservationSection() {
   return (
     <section id="reservation" className="scroll-mt-28 bg-[#0b0b0b] px-3 py-12 text-white md:px-4 md:py-16">
       <div className="mx-auto max-w-2xl overflow-hidden">
-        <div className="mb-8">
+        <ScrollReveal className="mb-8">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-300">
             <Utensils size={16} />
             {t.badge}
@@ -456,7 +457,7 @@ export default function ReservationSection() {
           <h2 className="text-2xl font-semibold leading-tight md:text-4xl">{t.title}</h2>
 
           <p className="mt-2 text-sm text-white/70 md:text-base">{t.subtitle}</p>
-        </div>
+        </ScrollReveal>
 
         <form
           onSubmit={handleSubmit}

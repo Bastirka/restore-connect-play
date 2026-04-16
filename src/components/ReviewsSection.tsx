@@ -323,7 +323,7 @@ const ReviewsSection = () => {
                   {reviewList.map((review, index) => (
                     <article
                       key={`${review.author_name}-${review.time || index}`}
-                      className="rounded-3xl border border-white/10 bg-black p-6 transition-all duration-300 hover:border-yellow-400/20"
+                      className="luxury-card-hover rounded-3xl border border-white/10 bg-black p-6 transition-all duration-300 hover:border-yellow-400/20"
                     >
                       <div className="mb-4 flex items-center gap-1">{renderStars(review.rating || 0)}</div>
 
