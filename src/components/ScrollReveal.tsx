@@ -4,10 +4,9 @@ interface ScrollRevealProps {
   children: ReactNode;
   className?: string;
   delay?: number;
-  as?: keyof JSX.IntrinsicElements;
 }
 
-const ScrollReveal = ({ children, className = "", delay = 0, as: Tag = "div" }: ScrollRevealProps) => {
+const ScrollReveal = ({ children, className = "", delay = 0 }: ScrollRevealProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -34,18 +33,18 @@ const ScrollReveal = ({ children, className = "", delay = 0, as: Tag = "div" }: 
   }, [delay]);
 
   return (
-    <Tag
-      ref={ref as any}
+    <div
+      ref={ref}
       className={className}
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(40px)",
-        transition: `opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1) ${delay}s, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) ${delay}s`,
+        transition: `opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1)`,
         willChange: "opacity, transform",
       }}
     >
       {children}
-    </Tag>
+    </div>
   );
 };
 
