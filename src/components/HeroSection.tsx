@@ -46,17 +46,17 @@ const HeroSection = () => {
 
       <div className="relative z-10 flex min-h-[100svh] items-center justify-center px-4 py-20 sm:px-6 md:px-8">
         <motion.div
-          initial={{ opacity: 0, y: 28 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.85, ease: "easeOut" }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           className="mx-auto flex max-w-4xl flex-col items-center text-center"
         >
           <motion.img
             src={logoUrl}
             alt={t.logoAlt}
-            initial={{ opacity: 0, scale: 0.97 }}
+            initial={{ opacity: 0, scale: 1.05 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.08, ease: "easeOut" }}
+            transition={{ duration: 0.9, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
     loading="eager"
     fetchPriority="high"
     decoding="async"
@@ -66,43 +66,43 @@ const HeroSection = () => {
           />
 
           <motion.h1
-            initial={{ opacity: 0, y: 18 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.75, delay: 0.18 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
             className="max-w-3xl text-3xl font-semibold tracking-tight text-white sm:text-4xl md:text-5xl"
           >
             {t.subtitle}
           </motion.h1>
 
           <motion.p
-            initial={{ opacity: 0, y: 18 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.75, delay: 0.28 }}
+            transition={{ duration: 0.8, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
             className="mt-5 max-w-2xl text-sm leading-relaxed text-white/75 sm:text-base md:mt-6 md:text-lg"
           >
             {t.description}
           </motion.p>
 
           <motion.div
-            initial={{ opacity: 0, y: 18 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.75, delay: 0.38 }}
+            transition={{ duration: 0.8, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="mt-10 flex w-full max-w-xl flex-col items-center justify-center gap-4 sm:mt-12 sm:flex-row"
           >
             <motion.a
               href="#menu"
-              whileHover={{ scale: 1.03 }}
+              whileHover={{ scale: 1.03, y: -2 }}
               whileTap={{ scale: 0.985 }}
-              className="inline-flex min-h-[54px] w-full items-center justify-center rounded-2xl bg-[#c62828] px-8 py-4 text-base font-semibold text-white shadow-[0_14px_30px_rgba(198,40,40,0.32)] transition-all duration-300 hover:bg-[#b71c1c] sm:w-auto sm:min-w-[210px]"
+              className="luxury-btn-hover inline-flex min-h-[54px] w-full items-center justify-center rounded-2xl bg-[#c62828] px-8 py-4 text-base font-semibold text-white shadow-[0_14px_30px_rgba(198,40,40,0.32)] transition-all duration-300 hover:bg-[#b71c1c] sm:w-auto sm:min-w-[210px]"
             >
               {t.menuBtn}
             </motion.a>
 
             <motion.a
               href="#reservation"
-              whileHover={{ scale: 1.03 }}
+              whileHover={{ scale: 1.03, y: -2 }}
               whileTap={{ scale: 0.985 }}
-              className="inline-flex min-h-[54px] w-full items-center justify-center rounded-2xl border border-white/75 bg-transparent px-8 py-4 text-base font-semibold text-white transition-all duration-300 hover:bg-white/8 sm:w-auto sm:min-w-[250px]"
+              className="luxury-btn-hover inline-flex min-h-[54px] w-full items-center justify-center rounded-2xl border border-white/75 bg-transparent px-8 py-4 text-base font-semibold text-white transition-all duration-300 hover:bg-white/8 sm:w-auto sm:min-w-[250px]"
             >
               {t.orderBtn}
             </motion.a>

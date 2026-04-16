@@ -84,7 +84,7 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`fixed left-0 right-0 top-0 z-50 transition-all duration-500 ${
+      className={`fixed left-0 right-0 top-0 z-50 transition-all duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
         scrolled
           ? "border-b border-border/50 bg-background/95 shadow-lg shadow-background/20 backdrop-blur-xl"
           : "bg-transparent"
@@ -104,7 +104,7 @@ const Navbar = () => {
               key={l.href}
               href={l.href}
               onClick={(e) => handleNavClick(e, l.href)}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-foreground/70 transition-all duration-200 hover:bg-secondary/50 hover:text-foreground"
+              className="nav-link-underline rounded-lg px-3 py-2 text-sm font-medium text-foreground/70 transition-all duration-200 hover:bg-secondary/50 hover:text-foreground"
             >
               {l.label}
             </a>
