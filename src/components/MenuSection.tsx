@@ -283,7 +283,7 @@ const MenuSection = () => {
         const url = `${MENU_API_URL}?action=getMenu&lang=${encodeURIComponent(safeLang)}`;
         const res = await fetch(url, {
           signal: controller.signal,
-          cache: "no-store",
+          redirect: "follow",
         });
 
         const text = await res.text();
