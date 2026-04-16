@@ -1,6 +1,8 @@
-import { memo, useCallback, useContext, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ZoomIn } from "lucide-react";
+import { X, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
+import useEmblaCarousel from "embla-carousel-react";
+import Autoplay from "embla-carousel-autoplay";
 import { LanguageContext } from "@/App";
 import img1 from "@/assets/food-kebab-plate.jpg";
 import img2 from "@/assets/food-kebab-plate2.jpg";
@@ -50,13 +52,46 @@ const GallerySection = () => {
   const safeLang = (lang as keyof typeof translations) || "lv";
   const t = translations[safeLang] || translations.lv;
   const [selected, setSelected] = useState<number | null>(null);
+  const [selectedSnap, setSelectedSnap] = useState(0);
+
+  const autoplayPlugin = useMemo(
+    () =>
+      Autoplay({
+        delay: 3000,
+        stopOnInteraction: false,
+        stopOnMouseEnter: true,
+      }),
+    [],
+  );
+
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    {
+      loop: true,
+      align: "start",
+      slidesToScroll: 1,
+      duration: 25,
+    },
+    [autoplayPlugin],
+  );
 
   const images = useMemo(
     () => imageSources.map((src, i) => ({ src, alt: t.images[i] })),
     [t],
   );
 
+  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
   const handleClose = useCallback(() => setSelected(null), []);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onSelect = () => setSelectedSnap(emblaApi.selectedScrollSnap());
+    emblaApi.on("select", onSelect);
+    onSelect();
+    return () => { emblaApi.off("select", onSelect); };
+  }, [emblaApi]);
+
+  const dotCount = emblaApi?.scrollSnapList().length ?? imageSources.length;
 
   return (
     <section id="gallery" className="py-24 md:py-32 bg-secondary/30">
@@ -71,29 +106,63 @@ const GallerySection = () => {
           <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground">{t.title}</h2>
         </motion.div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-          {images.map((img, i) => (
-            <motion.button
+        {/* Carousel */}
+        <div className="relative group/carousel">
+          <div className="overflow-hidden" ref={emblaRef}>
+            <div className="flex -ml-3 md:-ml-4">
+              {images.map((img, i) => (
+                <div
+                  key={i}
+                  className="min-w-0 shrink-0 grow-0 pl-3 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3"
+                >
+                  <button
+                    onClick={() => setSelected(i)}
+                    className="overflow-hidden rounded-2xl aspect-square group cursor-pointer relative w-full"
+                  >
+                    <img
+                      src={img.src}
+                      alt={img.alt}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <div className="absolute inset-0 bg-background/0 group-hover:bg-background/30 transition-all duration-300 flex items-center justify-center">
+                      <ZoomIn className="w-8 h-8 text-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-300 drop-shadow-lg" />
+                    </div>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Arrows */}
+          <button
+            onClick={scrollPrev}
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-background/60 hover:bg-background/80 text-foreground rounded-full p-2 transition-all duration-200 backdrop-blur-sm"
+            aria-label="Previous"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <button
+            onClick={scrollNext}
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-background/60 hover:bg-background/80 text-foreground rounded-full p-2 transition-all duration-200 backdrop-blur-sm"
+            aria-label="Next"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Dots */}
+        <div className="flex justify-center gap-2 mt-6">
+          {Array.from({ length: dotCount }).map((_, i) => (
+            <button
               key={i}
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08 }}
-              onClick={() => setSelected(i)}
-              className="overflow-hidden rounded-2xl aspect-square group cursor-pointer relative"
-            >
-              <img
-                src={img.src}
-                alt={img.alt}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                loading="lazy"
-                decoding="async"
-                sizes="(max-width: 768px) 50vw, 33vw"
-              />
-              <div className="absolute inset-0 bg-background/0 group-hover:bg-background/30 transition-all duration-300 flex items-center justify-center">
-                <ZoomIn className="w-8 h-8 text-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-300 drop-shadow-lg" />
-              </div>
-            </motion.button>
+              onClick={() => emblaApi?.scrollTo(i)}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                i === selectedSnap ? "bg-accent w-6" : "bg-foreground/30 hover:bg-foreground/50"
+              }`}
+              aria-label={`Go to slide ${i + 1}`}
+            />
           ))}
         </div>
       </div>
