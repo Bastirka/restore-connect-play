@@ -68,7 +68,7 @@ const GallerySection = () => {
     {
       loop: true,
       align: "start",
-      slidesToScroll: 1,
+      slidesToScroll: typeof window !== "undefined" && window.innerWidth < 640 ? 1 : 2,
       duration: 25,
     },
     [autoplayPlugin],
