@@ -3,7 +3,6 @@ import { ChevronDown, Utensils } from "lucide-react";
 import { LanguageContext } from "@/App";
 
 const MENU_API_URL = "https://sedo-menu-proxy.raivisbabris99.workers.dev";
-
 const R2_BASE_URL = "https://pub-ce27dafe278d4f219c7c1ca812bee1fb.r2.dev";
 
 const translations = {
@@ -271,7 +270,6 @@ const MenuSection = () => {
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
     let isMounted = true;
 
     async function loadMenu() {
@@ -279,10 +277,13 @@ const MenuSection = () => {
         setLoading(true);
         setErrorMessage("");
 
-        const url = `${MENU_API_URL}?action=getMenu&lang=${encodeURIComponent(safeLang)}`;
+        const url = `${MENU_API_URL}?lang=${encodeURIComponent(safeLang)}`;
         const res = await fetch(url, {
-          signal: controller.signal,
+          method: "GET",
           redirect: "follow",
+          headers: {
+            Accept: "application/json",
+          },
         });
 
         const text = await res.text();
@@ -335,7 +336,6 @@ const MenuSection = () => {
 
     return () => {
       isMounted = false;
-      controller.abort();
     };
   }, [safeLang]);
 
