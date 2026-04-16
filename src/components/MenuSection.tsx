@@ -11,6 +11,8 @@ const translations = {
   lv: {
     title: "Ēdienkarte",
     loading: "Ielādējam ēdienkarti...",
+    empty: "Ēdienkarte pašlaik nav pieejama.",
+    error: "Neizdevās ielādēt ēdienkarti.",
     itemCount: "ēdieni",
     standard: "Standarta",
     categories: {
@@ -29,6 +31,8 @@ const translations = {
   en: {
     title: "Menu",
     loading: "Loading menu...",
+    empty: "Menu is currently unavailable.",
+    error: "Failed to load menu.",
     itemCount: "dishes",
     standard: "Standard",
     categories: {
@@ -47,6 +51,8 @@ const translations = {
   ru: {
     title: "Меню",
     loading: "Загружаем меню...",
+    empty: "Меню сейчас недоступно.",
+    error: "Не удалось загрузить меню.",
     itemCount: "блюда",
     standard: "Стандарт",
     categories: {
@@ -65,6 +71,8 @@ const translations = {
   uk: {
     title: "Меню",
     loading: "Завантажуємо меню...",
+    empty: "Меню зараз недоступне.",
+    error: "Не вдалося завантажити меню.",
     itemCount: "страви",
     standard: "Стандарт",
     categories: {
@@ -147,7 +155,6 @@ function resolveMenuImageUrl(imageValue: string) {
   }
 
   const cleaned = value.replace(/^\/+/, "");
-
   const encodedPath = cleaned
     .split("/")
     .map((part) => encodeURIComponent(part))
@@ -254,6 +261,7 @@ const MenuSection = () => {
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
   const [openCategory, setOpenCategory] = useState("");
 
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -270,6 +278,7 @@ const MenuSection = () => {
     async function loadMenu() {
       try {
         setLoading(true);
+        setErrorMessage("");
 
         const url = `${MENU_API_URL}?action=getMenu&lang=${encodeURIComponent(safeLang)}`;
         const res = await fetch(url, {
@@ -277,22 +286,26 @@ const MenuSection = () => {
           cache: "no-store",
         });
 
+        const text = await res.text();
+
         if (!res.ok) {
-          throw new Error(`Failed to load menu: ${res.status}`);
+          throw new Error(`HTTP ${res.status}: ${text}`);
         }
 
-        const data = await res.json();
+        let data: any;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error(`Invalid JSON response: ${text.slice(0, 300)}`);
+        }
 
         if (!Array.isArray(data)) {
-          throw new Error("Menu API response is not array");
+          throw new Error(`Menu API response is not array: ${JSON.stringify(data).slice(0, 300)}`);
         }
 
         const normalized: MenuItem[] = data
           .map((item: any, index: number) => ({
-            id: String(
-              item.id ||
-                `${item.category || ""}-${item.groupName || ""}-${item.variantName || ""}-${item.price || ""}-${index}`,
-            ).trim(),
+            id: String(item.id || `${index + 1}`).trim(),
             category: String(item.category || "").trim(),
             categoryLabel: String(item.categoryLabel || "").trim(),
             groupName: String(item.groupName || "").trim(),
@@ -309,12 +322,12 @@ const MenuSection = () => {
           setLoading(false);
         }
       } catch (error: any) {
-        if (error?.name !== "AbortError") {
-          console.error("Failed to load menu:", error);
-          if (isMounted) {
-            setMenuItems([]);
-            setLoading(false);
-          }
+        console.error("Failed to load menu:", error);
+
+        if (isMounted) {
+          setMenuItems([]);
+          setErrorMessage(error?.message || "Unknown error");
+          setLoading(false);
         }
       }
     }
@@ -338,14 +351,7 @@ const MenuSection = () => {
     });
 
     Object.keys(result).forEach((category) => {
-      result[category].sort((a, b) => {
-        if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
-
-        const first = a.groupName.localeCompare(b.groupName);
-        if (first !== 0) return first;
-
-        return a.variantName.localeCompare(b.variantName);
-      });
+      result[category].sort((a, b) => a.sortOrder - b.sortOrder);
     });
 
     return result;
@@ -384,6 +390,32 @@ const MenuSection = () => {
       <section id="menu" className="py-24">
         <div className="container">
           <div className="text-white/70">{t.loading}</div>
+        </div>
+      </section>
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <section id="menu" className="py-24">
+        <div className="container">
+          <h2 className="text-3xl font-bold text-white md:text-4xl">{t.title}</h2>
+          <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+            {t.error}
+            <br />
+            <span className="text-red-300/80">{errorMessage}</span>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!menuItems.length) {
+    return (
+      <section id="menu" className="py-24">
+        <div className="container">
+          <h2 className="text-3xl font-bold text-white md:text-4xl">{t.title}</h2>
+          <div className="mt-4 text-white/60">{t.empty}</div>
         </div>
       </section>
     );
