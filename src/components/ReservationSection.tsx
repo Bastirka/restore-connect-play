@@ -303,9 +303,7 @@ export default function ReservationSection() {
   const [zone, setZone] = useState("Centrālā zāle");
   const [notes, setNotes] = useState("");
 
-  const [availabilityLoading, setAvailabilityLoading] = useState(false);
-  const [availabilityError, setAvailabilityError] = useState("");
-  const [availabilityData, setAvailabilityData] = useState<AvailabilityData | null>(null);
+  const [submitLoading2, _setSubmitLoading2] = useState(false);
 
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState("");
