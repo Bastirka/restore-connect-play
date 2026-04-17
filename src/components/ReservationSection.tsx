@@ -1,27 +1,11 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import ScrollReveal from "@/components/ScrollReveal";
 import { CalendarDays, Clock, Users, MessageSquare, Utensils, Send, ChevronDown } from "lucide-react";
 import { LanguageContext } from "@/App";
 import CancelReservationSection from "./CancelReservationSection";
 
-const RESERVATION_API_URL = "https://reservation-api.raivisbabris99.workers.dev/";
-
-type AvailabilityData = {
-  success: boolean;
-  zone: string;
-  capacity: number;
-  reserved: number;
-  remaining: number;
-  totalTables: number;
-  freeTables: number;
-  requestedGuests: number | null;
-  canReserve: boolean;
-  tableCount: number;
-  suggestedTables: string[];
-  freeTableIds: string[];
-  available: boolean;
-  message: string;
-};
+const RESERVATION_API_BASE = "https://summer-morning-793e.sedokafe.workers.dev";
+const RESERVATION_API_KEY = "sedorestorans2024";
 
 const translations = {
   lv: {
