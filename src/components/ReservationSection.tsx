@@ -322,61 +322,15 @@ export default function ReservationSection() {
 
   const timeRangeValid = !time || !endTime || endTime > time;
 
-  const checkAvailability = async () => {
-    try {
-      if (!date || !time || !endTime || !zone || !guests || !timeRangeValid) {
-        setAvailabilityError("");
-        setAvailabilityData(null);
-        return;
-      }
-
-      setAvailabilityLoading(true);
-      setAvailabilityError("");
-
-      const data = await postJson(RESERVATION_API_URL, {
-        action: "availability",
-        date,
-        time,
-        endTime,
-        guests: Number(guests),
-        zone,
-      });
-
-      setAvailabilityData(data as AvailabilityData);
-      setAvailabilityError("");
-    } catch (error) {
-      setAvailabilityData(null);
-      setAvailabilityError(error instanceof Error ? error.message : t.availabilityFailed);
-    } finally {
-      setAvailabilityLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!date || !time || !endTime || !zone || !guests || !timeRangeValid) {
-      setAvailabilityError("");
-      setAvailabilityData(null);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      checkAvailability();
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [date, time, endTime, zone, guests]);
-
   const canSubmit =
     !submitLoading &&
-    !availabilityLoading &&
     timeRangeValid &&
     !!name.trim() &&
     !!phone.trim() &&
     !!date &&
     !!time &&
     !!endTime &&
-    !!zone &&
-    availabilityData?.available !== false;
+    !!zone;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -389,21 +343,20 @@ export default function ReservationSection() {
       setSubmitSuccess("");
 
       const payload = {
-        action: "create",
         name: name.trim(),
         phone: phone.trim(),
         email: email.trim(),
         date,
         time,
-        endTime,
         guests: Number(guests),
         zone,
         notes: notes.trim(),
+        endTime,
       };
 
-      const data = await postJson(RESERVATION_API_URL, payload);
+      const data = await postJson(`${RESERVATION_API_BASE}/create`, payload);
+      const reservationId = data?.reservationId || data?.id || "";
       const warning = data?.warning || "";
-      const reservationId = data?.reservationId || "";
 
       setSubmitSuccess(
         `${t.success}\n${t.reservationId}: ${reservationId}\n${time}–${endTime}\n${t.saveId}${warning ? `\n\n${t.note}: ${warning}` : ""}`,
@@ -418,8 +371,6 @@ export default function ReservationSection() {
       setGuests("2");
       setZone("Centrālā zāle");
       setNotes("");
-      setAvailabilityData(null);
-      setAvailabilityError("");
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : t.submitFailed);
     } finally {
