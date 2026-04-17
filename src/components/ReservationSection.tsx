@@ -345,11 +345,11 @@ export default function ReservationSection() {
         phone: phone.trim(),
         email: email.trim(),
         date,
-        time,
+        fromTime: time,
+        toTime: endTime,
         guests: Number(guests),
         zone,
         notes: notes.trim(),
-        endTime,
       };
 
       const data = await postJson(`${RESERVATION_API_BASE}/create`, payload);
