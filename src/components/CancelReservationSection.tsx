@@ -2,7 +2,8 @@ import { useContext, useState } from "react";
 import { XCircle, Hash, Phone, Loader2 } from "lucide-react";
 import { LanguageContext } from "@/App";
 
-const RESERVATION_API_URL = "https://reservation-api.raivisbabris99.workers.dev/";
+const RESERVATION_API_BASE = "https://summer-morning-793e.sedokafe.workers.dev";
+const RESERVATION_API_KEY = "sedorestorans2024";
 
 const translations = {
   lv: {
