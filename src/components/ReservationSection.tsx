@@ -234,14 +234,12 @@ async function postJson(url: string, payload: unknown) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "x-api-key": RESERVATION_API_KEY,
     },
     body: JSON.stringify(payload),
   });
 
   const text = await response.text();
-  console.log("POST URL:", url);
-  console.log("POST PAYLOAD:", payload);
-  console.log("RAW RESPONSE:", text);
 
   let data: any = null;
   try {
@@ -250,7 +248,7 @@ async function postJson(url: string, payload: unknown) {
     throw new Error(`Server returned invalid JSON from ${url}`);
   }
 
-  if (!response.ok || !data?.success) {
+  if (!response.ok || data?.ok === false || data?.success === false) {
     throw new Error(data?.message || data?.error || "Request failed");
   }
 
