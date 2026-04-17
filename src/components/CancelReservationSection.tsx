@@ -2,7 +2,8 @@ import { useContext, useState } from "react";
 import { XCircle, Hash, Phone, Loader2 } from "lucide-react";
 import { LanguageContext } from "@/App";
 
-const RESERVATION_API_URL = "https://reservation-api.raivisbabris99.workers.dev/";
+const RESERVATION_API_BASE = "https://summer-morning-793e.sedokafe.workers.dev";
+const RESERVATION_API_KEY = "sedorestorans2024";
 
 const translations = {
   lv: {
@@ -135,15 +136,15 @@ export default function CancelReservationSection() {
       setLoading(true);
 
       const payload = {
-        action: "cancel",
         reservationId: reservationId.trim(),
         phone: phone.trim(),
       };
 
-      const response = await fetch(RESERVATION_API_URL, {
+      const response = await fetch(`${RESERVATION_API_BASE}/cancel`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-api-key": RESERVATION_API_KEY,
         },
         body: JSON.stringify(payload),
       });
@@ -157,8 +158,9 @@ export default function CancelReservationSection() {
         throw new Error(t.errorServer);
       }
 
-      if (!response.ok || !data.success) {
-        throw new Error(getLocalizedCancelError(data?.error, t));
+      const isOk = data?.ok === true || data?.success === true;
+      if (!response.ok || !isOk) {
+        throw new Error(getLocalizedCancelError(data?.error || data?.code, t));
       }
 
       setSuccess(t.success);

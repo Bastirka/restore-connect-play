@@ -1,27 +1,11 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import ScrollReveal from "@/components/ScrollReveal";
 import { CalendarDays, Clock, Users, MessageSquare, Utensils, Send, ChevronDown } from "lucide-react";
 import { LanguageContext } from "@/App";
 import CancelReservationSection from "./CancelReservationSection";
 
-const RESERVATION_API_URL = "https://reservation-api.raivisbabris99.workers.dev/";
-
-type AvailabilityData = {
-  success: boolean;
-  zone: string;
-  capacity: number;
-  reserved: number;
-  remaining: number;
-  totalTables: number;
-  freeTables: number;
-  requestedGuests: number | null;
-  canReserve: boolean;
-  tableCount: number;
-  suggestedTables: string[];
-  freeTableIds: string[];
-  available: boolean;
-  message: string;
-};
+const RESERVATION_API_BASE = "https://summer-morning-793e.sedokafe.workers.dev";
+const RESERVATION_API_KEY = "sedorestorans2024";
 
 const translations = {
   lv: {
@@ -250,14 +234,12 @@ async function postJson(url: string, payload: unknown) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "x-api-key": RESERVATION_API_KEY,
     },
     body: JSON.stringify(payload),
   });
 
   const text = await response.text();
-  console.log("POST URL:", url);
-  console.log("POST PAYLOAD:", payload);
-  console.log("RAW RESPONSE:", text);
 
   let data: any = null;
   try {
@@ -266,7 +248,7 @@ async function postJson(url: string, payload: unknown) {
     throw new Error(`Server returned invalid JSON from ${url}`);
   }
 
-  if (!response.ok || !data?.success) {
+  if (!response.ok || data?.ok === false || data?.success === false) {
     throw new Error(data?.message || data?.error || "Request failed");
   }
 
@@ -321,9 +303,7 @@ export default function ReservationSection() {
   const [zone, setZone] = useState("Centrālā zāle");
   const [notes, setNotes] = useState("");
 
-  const [availabilityLoading, setAvailabilityLoading] = useState(false);
-  const [availabilityError, setAvailabilityError] = useState("");
-  const [availabilityData, setAvailabilityData] = useState<AvailabilityData | null>(null);
+
 
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -340,61 +320,15 @@ export default function ReservationSection() {
 
   const timeRangeValid = !time || !endTime || endTime > time;
 
-  const checkAvailability = async () => {
-    try {
-      if (!date || !time || !endTime || !zone || !guests || !timeRangeValid) {
-        setAvailabilityError("");
-        setAvailabilityData(null);
-        return;
-      }
-
-      setAvailabilityLoading(true);
-      setAvailabilityError("");
-
-      const data = await postJson(RESERVATION_API_URL, {
-        action: "availability",
-        date,
-        time,
-        endTime,
-        guests: Number(guests),
-        zone,
-      });
-
-      setAvailabilityData(data as AvailabilityData);
-      setAvailabilityError("");
-    } catch (error) {
-      setAvailabilityData(null);
-      setAvailabilityError(error instanceof Error ? error.message : t.availabilityFailed);
-    } finally {
-      setAvailabilityLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!date || !time || !endTime || !zone || !guests || !timeRangeValid) {
-      setAvailabilityError("");
-      setAvailabilityData(null);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      checkAvailability();
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [date, time, endTime, zone, guests]);
-
   const canSubmit =
     !submitLoading &&
-    !availabilityLoading &&
     timeRangeValid &&
     !!name.trim() &&
     !!phone.trim() &&
     !!date &&
     !!time &&
     !!endTime &&
-    !!zone &&
-    availabilityData?.available !== false;
+    !!zone;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -407,21 +341,20 @@ export default function ReservationSection() {
       setSubmitSuccess("");
 
       const payload = {
-        action: "create",
         name: name.trim(),
         phone: phone.trim(),
         email: email.trim(),
         date,
         time,
-        endTime,
         guests: Number(guests),
         zone,
         notes: notes.trim(),
+        endTime,
       };
 
-      const data = await postJson(RESERVATION_API_URL, payload);
+      const data = await postJson(`${RESERVATION_API_BASE}/create`, payload);
+      const reservationId = data?.reservationId || data?.id || "";
       const warning = data?.warning || "";
-      const reservationId = data?.reservationId || "";
 
       setSubmitSuccess(
         `${t.success}\n${t.reservationId}: ${reservationId}\n${time}–${endTime}\n${t.saveId}${warning ? `\n\n${t.note}: ${warning}` : ""}`,
@@ -436,8 +369,6 @@ export default function ReservationSection() {
       setGuests("2");
       setZone("Centrālā zāle");
       setNotes("");
-      setAvailabilityData(null);
-      setAvailabilityError("");
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : t.submitFailed);
     } finally {
@@ -566,33 +497,6 @@ export default function ReservationSection() {
             </div>
           </FieldShell>
 
-          {availabilityLoading && (
-            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200 md:text-base">
-              {t.checkingAvailability}
-            </div>
-          )}
-
-          {availabilityError && (
-            <div className="rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300 md:text-base">
-              {availabilityError}
-            </div>
-          )}
-
-          {availabilityData && !availabilityError && (
-            <div
-              className={`rounded-2xl border px-4 py-3 text-sm md:text-base ${
-                availabilityData.available
-                  ? "border-green-500/40 bg-green-500/10 text-green-300"
-                  : "border-red-500/40 bg-red-500/10 text-red-300"
-              }`}
-            >
-              {availabilityData.available
-                ? `${t.freePlaces}: ${availabilityData.remaining}. ${t.suggestedTables}: ${
-                    availabilityData.suggestedTables.join(", ") || "-"
-                  }`
-                : t.noTable}
-            </div>
-          )}
 
           <FieldShell
             label={t.notesLabel}
