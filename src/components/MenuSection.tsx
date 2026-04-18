@@ -1,4 +1,4 @@
-import React, { memo, useContext, useEffect, useMemo, useRef, useState, useCallback } from "react";
+import React, { memo, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Utensils } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
 import { LanguageContext } from "@/App";
@@ -14,6 +14,11 @@ const translations = {
     error: "Neizdevās ielādēt ēdienkarti.",
     itemCount: "ēdieni",
     standard: "Standarta",
+    sizes: {
+      small: "Mazais",
+      big: "Lielais",
+      standard: "Standarta",
+    },
     categories: {
       kebabi: "Kebabi",
       burgeri: "Burgeri",
@@ -34,6 +39,11 @@ const translations = {
     error: "Failed to load menu.",
     itemCount: "dishes",
     standard: "Standard",
+    sizes: {
+      small: "Small",
+      big: "Big",
+      standard: "Standard",
+    },
     categories: {
       kebabi: "Kebabs",
       burgeri: "Burgers",
@@ -54,6 +64,11 @@ const translations = {
     error: "Не удалось загрузить меню.",
     itemCount: "блюда",
     standard: "Стандарт",
+    sizes: {
+      small: "Маленький",
+      big: "Большой",
+      standard: "Стандарт",
+    },
     categories: {
       kebabi: "Кебабы",
       burgeri: "Бургеры",
@@ -69,11 +84,16 @@ const translations = {
   },
   uk: {
     title: "Меню",
-    loading: "Завантажуємо menu...",
+    loading: "Завантажуємо меню...",
     empty: "Меню зараз недоступне.",
-    error: "Не вдалося завантажити меню.",
+    error: "Не вдалося завантажити menu.",
     itemCount: "страви",
     standard: "Стандарт",
+    sizes: {
+      small: "Малий",
+      big: "Великий",
+      standard: "Стандарт",
+    },
     categories: {
       kebabi: "Кебаби",
       burgeri: "Бургери",
@@ -101,6 +121,22 @@ type MenuItem = {
   price: string;
   image: string;
   sortOrder: number;
+  sizeKey?: string;
+};
+
+type MenuCardGroup = {
+  key: string;
+  id: string;
+  category: string;
+  categoryLabel?: string;
+  groupName: string;
+  description: string;
+  image: string;
+  sortOrder: number;
+  standardItem?: MenuItem;
+  smallItem?: MenuItem;
+  bigItem?: MenuItem;
+  otherItems: MenuItem[];
 };
 
 const categoryOrder = [
@@ -155,6 +191,24 @@ function resolveMenuImageUrl(imageValue: string) {
 
   const cleaned = value.replace(/^\/+/, "");
   return `${R2_BASE_URL}/${cleaned}`;
+}
+
+function detectVariantKind(value: string) {
+  const v = normalizeText(value);
+
+  if (v === "mazais" || v === "small" || v === "маленький" || v === "малий") {
+    return "small";
+  }
+
+  if (v === "lielais" || v === "big" || v === "large" || v === "большой" || v === "великий") {
+    return "big";
+  }
+
+  if (v === "standarta" || v === "standard" || v === "стандарт") {
+    return "standard";
+  }
+
+  return "other";
 }
 
 const MenuImage = memo(function MenuImage({
@@ -246,11 +300,98 @@ const MenuImage = memo(function MenuImage({
   );
 });
 
+function MenuCard({
+  group,
+  t,
+  eagerImage,
+}: {
+  group: MenuCardGroup;
+  t: (typeof translations)[LangKey];
+  eagerImage: boolean;
+}) {
+  const hasSmall = !!group.smallItem;
+  const hasBig = !!group.bigItem;
+  const hasSizeToggle = hasSmall || hasBig;
+
+  const defaultSize: "small" | "big" | "standard" = hasSmall ? "small" : hasBig ? "big" : "standard";
+  const [selectedSize, setSelectedSize] = useState<"small" | "big" | "standard">(defaultSize);
+
+  useEffect(() => {
+    setSelectedSize(defaultSize);
+  }, [defaultSize, group.key]);
+
+  const activeItem =
+    (selectedSize === "small" && group.smallItem) ||
+    (selectedSize === "big" && group.bigItem) ||
+    group.standardItem ||
+    group.smallItem ||
+    group.bigItem ||
+    group.otherItems[0];
+
+  const priceText = activeItem?.price ? `${activeItem.price} €` : "—";
+  const imageAlt = [group.groupName, group.description, activeItem?.variantName].filter(Boolean).join(" • ");
+
+  return (
+    <article className="luxury-card-hover overflow-hidden rounded-xl border border-white/10 bg-black">
+      <MenuImage src={group.image} alt={imageAlt} eager={eagerImage} placeholderAlt={t.placeholderAlt} />
+
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h4 className="text-xl font-semibold text-white">{group.groupName}</h4>
+
+            {group.description ? (
+              <p className="mt-1 text-sm font-medium text-yellow-300/90">{group.description}</p>
+            ) : null}
+          </div>
+
+          <span className="min-w-[96px] shrink-0 whitespace-nowrap rounded-full border border-yellow-400/20 bg-yellow-400/10 px-4 py-1 text-center text-sm font-bold text-yellow-300">
+            {priceText}
+          </span>
+        </div>
+
+        {hasSizeToggle ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {group.smallItem ? (
+              <button
+                type="button"
+                onClick={() => setSelectedSize("small")}
+                className={`rounded-full border px-3 py-1 text-sm font-medium transition ${
+                  selectedSize === "small"
+                    ? "border-yellow-300 bg-yellow-300 text-black"
+                    : "border-white/15 bg-white/5 text-white/80 hover:bg-white/10"
+                }`}
+              >
+                {t.sizes.small}
+              </button>
+            ) : null}
+
+            {group.bigItem ? (
+              <button
+                type="button"
+                onClick={() => setSelectedSize("big")}
+                className={`rounded-full border px-3 py-1 text-sm font-medium transition ${
+                  selectedSize === "big"
+                    ? "border-yellow-300 bg-yellow-300 text-black"
+                    : "border-white/15 bg-white/5 text-white/80 hover:bg-white/10"
+                }`}
+              >
+                {t.sizes.big}
+              </button>
+            ) : null}
+          </div>
+        ) : activeItem?.variantName && detectVariantKind(activeItem.variantName) === "other" ? (
+          <p className="mt-4 text-sm font-medium text-yellow-300/90">{activeItem.variantName}</p>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
 const MenuSection = () => {
   const { lang } = useContext(LanguageContext);
 
   const safeLang: LangKey = lang === "lv" || lang === "en" || lang === "ru" || lang === "uk" ? lang : "lv";
-
   const t = translations[safeLang];
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -273,7 +414,7 @@ const MenuSection = () => {
         setLoading(true);
         setErrorMessage("");
 
-        const url = `${MENU_API_URL}?lang=${encodeURIComponent(safeLang)}`;
+        const url = `${MENU_API_URL}?action=getMenu&lang=${encodeURIComponent(safeLang)}`;
         const res = await fetch(url, {
           method: "GET",
           redirect: "follow",
@@ -310,6 +451,7 @@ const MenuSection = () => {
             price: String(item.price || "").trim(),
             image: resolveMenuImageUrl(String(item.image || item.images || "").trim()),
             sortOrder: Number(item.sortOrder || index + 1),
+            sizeKey: String(item.sizeKey || "").trim(),
           }))
           .filter((item) => item.category && item.groupName);
 
@@ -336,20 +478,68 @@ const MenuSection = () => {
   }, [safeLang]);
 
   const groupedByCategory = useMemo(() => {
-    const result: Record<string, MenuItem[]> = {};
+    const categories: Record<string, MenuCardGroup[]> = {};
+    const byCardKey: Record<string, MenuCardGroup> = {};
 
-    menuItems.forEach((item) => {
-      if (!result[item.category]) {
-        result[item.category] = [];
+    menuItems.forEach((item, index) => {
+      const cardKey = [item.category, normalizeText(item.groupName), normalizeText(item.description)].join("::");
+
+      if (!byCardKey[cardKey]) {
+        byCardKey[cardKey] = {
+          key: cardKey,
+          id: item.id || String(index + 1),
+          category: item.category,
+          categoryLabel: item.categoryLabel,
+          groupName: item.groupName,
+          description: item.description,
+          image: item.image,
+          sortOrder: item.sortOrder || index + 1,
+          standardItem: undefined,
+          smallItem: undefined,
+          bigItem: undefined,
+          otherItems: [],
+        };
       }
-      result[item.category].push(item);
+
+      const group = byCardKey[cardKey];
+
+      if (!group.image && item.image) {
+        group.image = item.image;
+      }
+
+      if (!group.categoryLabel && item.categoryLabel) {
+        group.categoryLabel = item.categoryLabel;
+      }
+
+      if (item.sortOrder < group.sortOrder) {
+        group.sortOrder = item.sortOrder;
+      }
+
+      const kind = item.sizeKey || detectVariantKind(item.variantName);
+
+      if (kind === "small" && !group.smallItem) {
+        group.smallItem = item;
+      } else if (kind === "big" && !group.bigItem) {
+        group.bigItem = item;
+      } else if (kind === "standard" && !group.standardItem) {
+        group.standardItem = item;
+      } else {
+        group.otherItems.push(item);
+      }
     });
 
-    Object.keys(result).forEach((category) => {
-      result[category].sort((a, b) => a.sortOrder - b.sortOrder);
+    Object.values(byCardKey).forEach((group) => {
+      if (!categories[group.category]) {
+        categories[group.category] = [];
+      }
+      categories[group.category].push(group);
     });
 
-    return result;
+    Object.keys(categories).forEach((category) => {
+      categories[category].sort((a, b) => a.sortOrder - b.sortOrder);
+    });
+
+    return categories;
   }, [menuItems]);
 
   const sortedCategories = useMemo(() => {
@@ -459,50 +649,9 @@ const MenuSection = () => {
 
               {openCategory === category && (
                 <div className="stagger-children grid gap-6 p-6 md:grid-cols-2 xl:grid-cols-3">
-                  {dishes.map((dish, index) => {
-                    const showVariant =
-                      dish.variantName &&
-                      normalizeText(dish.variantName) !== normalizeText(t.standard) &&
-                      normalizeText(dish.variantName) !== normalizeText(dish.groupName);
-
-                    const cardTitle = dish.groupName || dish.variantName || t.standard;
-                    const imageAlt = showVariant ? `${dish.groupName} - ${dish.variantName}` : cardTitle;
-
-                    return (
-                      <article
-                        key={`${safeLang}-${dish.id}-${index}`}
-                        className="luxury-card-hover overflow-hidden rounded-xl border border-white/10 bg-black"
-                        style={{ animationDelay: `${index * 0.05}s` }}
-                      >
-                        <MenuImage
-                          src={dish.image}
-                          alt={imageAlt}
-                          eager={index < 2}
-                          placeholderAlt={t.placeholderAlt}
-                        />
-
-                        <div className="p-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                              <h4 className="text-xl font-semibold text-white">{cardTitle}</h4>
-
-                              {showVariant ? (
-                                <p className="mt-1 text-sm font-medium text-yellow-300/90">{dish.variantName}</p>
-                              ) : null}
-                            </div>
-
-                            <span className="min-w-[96px] shrink-0 whitespace-nowrap rounded-full border border-yellow-400/20 bg-yellow-400/10 px-4 py-1 text-center text-sm font-bold text-yellow-300">
-                              {dish.price ? `${dish.price} €` : "—"}
-                            </span>
-                          </div>
-
-                          {dish.description ? (
-                            <p className="mt-3 text-sm leading-relaxed text-white/60">{dish.description}</p>
-                          ) : null}
-                        </div>
-                      </article>
-                    );
-                  })}
+                  {dishes.map((group, index) => (
+                    <MenuCard key={`${safeLang}-${group.key}`} group={group} t={t} eagerImage={index < 2} />
+                  ))}
                 </div>
               )}
             </div>
