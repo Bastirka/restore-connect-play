@@ -15,6 +15,7 @@ type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 
 const translations = {
   lv: {
+    dayNames: { mon: "Pirmdiena", tue: "Otrdiena", wed: "Trešdiena", thu: "Ceturtdiena", fri: "Piektdiena", sat: "Sestdiena", sun: "Svētdiena" },
     brandText: "Kebabi · Rēzekne",
     freshFood: "Svaigs ēdiens katru dienu.",
     address: "Adrese",
@@ -38,6 +39,7 @@ const translations = {
     ],
   },
   en: {
+    dayNames: { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" },
     brandText: "Kebabs · Rezekne",
     freshFood: "Fresh food every day.",
     address: "Address",
@@ -61,6 +63,7 @@ const translations = {
     ],
   },
   ru: {
+    dayNames: { mon: "Понедельник", tue: "Вторник", wed: "Среда", thu: "Четверг", fri: "Пятница", sat: "Суббота", sun: "Воскресенье" },
     brandText: "Кебабы · Резекне",
     freshFood: "Свежая еда каждый день.",
     address: "Адрес",
@@ -84,6 +87,7 @@ const translations = {
     ],
   },
   uk: {
+    dayNames: { mon: "Понеділок", tue: "Вівторок", wed: "Середа", thu: "Четвер", fri: "П’ятниця", sat: "Субота", sun: "Неділя" },
     brandText: "Кебаби · Резекне",
     freshFood: "Свіжа їжа щодня.",
     address: "Адреса",
