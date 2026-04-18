@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Phone, MapPin, Clock, Instagram } from "lucide-react";
+import { Phone, MapPin, Clock, Instagram, Facebook } from "lucide-react";
 import { LanguageContext } from "@/App";
 
 const HOURS_CSV_URL =
@@ -24,6 +24,8 @@ const translations = {
     menu: "Ēdienkarte",
     contactLink: "Kontakti",
     instagram: "Instagram",
+    facebook: "Facebook",
+    tiktok: "TikTok",
     copyright: "SEDO Restorāns. Visas tiesības aizsargātas.",
     fallbackHours: ["P–Pk: 10:00 – 22:00", "Se: 11:00 – 23:00", "Sv: 11:00 – 21:00"],
     dayNames: {
@@ -46,6 +48,8 @@ const translations = {
     menu: "Menu",
     contactLink: "Contacts",
     instagram: "Instagram",
+    facebook: "Facebook",
+    tiktok: "TikTok",
     copyright: "SEDO Restaurant. All rights reserved.",
     fallbackHours: ["Mon–Fri: 10:00 – 22:00", "Sat: 11:00 – 23:00", "Sun: 11:00 – 21:00"],
     dayNames: {
@@ -68,6 +72,8 @@ const translations = {
     menu: "Меню",
     contactLink: "Контакты",
     instagram: "Instagram",
+    facebook: "Facebook",
+    tiktok: "TikTok",
     copyright: "Ресторан SEDO. Все права защищены.",
     fallbackHours: ["Пн–Пт: 10:00 – 22:00", "Сб: 11:00 – 23:00", "Вс: 11:00 – 21:00"],
     dayNames: {
@@ -90,6 +96,8 @@ const translations = {
     menu: "Меню",
     contactLink: "Контакти",
     instagram: "Instagram",
+    facebook: "Facebook",
+    tiktok: "TikTok",
     copyright: "Ресторан SEDO. Усі права захищені.",
     fallbackHours: ["Пн–Пт: 10:00 – 22:00", "Сб: 11:00 – 23:00", "Нд: 11:00 – 21:00"],
     dayNames: {
@@ -113,6 +121,10 @@ const DAY_ALIASES: Record<DayKey, string[]> = {
   sat: ["sat", "saturday", "sestdiena", "суббота", "субота"],
   sun: ["sun", "sunday", "svētdiena", "svetdiena", "воскресенье", "неділя"],
 };
+
+const FACEBOOK_URL = "https://www.facebook.com/share/1B1DncH9VS/?mibextid=wwXIfr";
+
+const TIKTOK_URL = "https://www.tiktok.com/@sedorestaurant?_r=1&_t=ZN-95eKWVxJ9qY";
 
 function normalizeText(value: string) {
   return String(value || "")
@@ -162,6 +174,12 @@ function parseCsvLine(line: string) {
   return result.map((value) => value.replace(/^"|"$/g, ""));
 }
 
+const TikTokIcon = ({ className = "h-4 w-4" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+    <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.225V2h-3.227v12.264c0 1.303-1.04 2.363-2.324 2.363a2.333 2.333 0 0 1-2.323-2.363 2.333 2.333 0 0 1 2.323-2.364c.243 0 .477.039.698.11V8.728a5.55 5.55 0 0 0-.698-.044A5.59 5.59 0 0 0 4.7 14.264a5.59 5.59 0 0 0 5.568 5.58 5.59 5.59 0 0 0 5.568-5.58V8.018a7.98 7.98 0 0 0 4.664 1.493V6.286a4.76 4.76 0 0 1-.911-.09Z" />
+  </svg>
+);
+
 const Footer = () => {
   const { lang } = useContext(LanguageContext);
   const safeLang = (lang as keyof typeof translations) || "lv";
@@ -208,10 +226,13 @@ const Footer = () => {
 
   return (
     <footer className="border-t border-border/50 py-16">
-      <div className="container" style={{
-        opacity: 0,
-        animation: 'stagger-fade-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards',
-      }}>
+      <div
+        className="container"
+        style={{
+          opacity: 0,
+          animation: "stagger-fade-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards",
+        }}
+      >
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <span className="font-display text-2xl font-bold text-primary">SEDO</span>
@@ -275,6 +296,28 @@ const Footer = () => {
                 aria-label={t.instagram}
               >
                 <Instagram className="h-4 w-4" />
+                <span>@sedorestaurant</span>
+              </a>
+
+              <a
+                href={FACEBOOK_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
+                aria-label={t.facebook}
+              >
+                <Facebook className="h-4 w-4" />
+                <span>Facebook</span>
+              </a>
+
+              <a
+                href={TIKTOK_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
+                aria-label={t.tiktok}
+              >
+                <TikTokIcon className="h-4 w-4" />
                 <span>@sedorestaurant</span>
               </a>
             </div>
