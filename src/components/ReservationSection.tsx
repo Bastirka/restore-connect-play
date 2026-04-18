@@ -4,8 +4,7 @@ import { CalendarDays, Clock, Users, MessageSquare, Utensils, Send, ChevronDown 
 import { LanguageContext } from "@/App";
 import CancelReservationSection from "./CancelReservationSection";
 
-const RESERVATION_CREATE_URL =
-  "https://script.google.com/macros/s/AKfycbw59N1SiRRUfaFM-voVnn7AwFXUVWPE6-x3WXvNrCMz5jj2rJahcd15rCopxzu-W6gQfw/exec";
+const RESERVATION_CREATE_URL = "https://summer-morning-793e.sedokafe.workers.dev/create";
 
 const translations = {
   lv: {
@@ -34,11 +33,6 @@ const translations = {
     notesLabel: "Piezīmes",
     notesPlaceholder: "Papildu vēlmes...",
 
-    checkingAvailability: "Pārbauda pieejamību...",
-    noTable: "Šajā laikā piemērotu galdu nav.",
-    freePlaces: "Brīvas vietas",
-    suggestedTables: "Ieteiktie galdi",
-
     submit: "Rezervēt galdiņu",
     submitting: "Nosūta...",
 
@@ -48,7 +42,6 @@ const translations = {
     note: "Piezīme",
 
     submitFailed: "Rezervāciju neizdevās nosūtīt",
-    availabilityFailed: "Pieejamības pārbaude neizdevās",
 
     zones: {
       central: "Centrālā zāle",
@@ -84,11 +77,6 @@ const translations = {
     notesLabel: "Notes",
     notesPlaceholder: "Additional requests...",
 
-    checkingAvailability: "Checking availability...",
-    noTable: "No suitable table is available at this time.",
-    freePlaces: "Free places",
-    suggestedTables: "Suggested tables",
-
     submit: "Reserve a table",
     submitting: "Sending...",
 
@@ -98,7 +86,6 @@ const translations = {
     note: "Note",
 
     submitFailed: "Failed to send reservation",
-    availabilityFailed: "Availability check failed",
 
     zones: {
       central: "Main hall",
@@ -134,11 +121,6 @@ const translations = {
     notesLabel: "Примечания",
     notesPlaceholder: "Дополнительные пожелания...",
 
-    checkingAvailability: "Проверяем доступность...",
-    noTable: "Подходящего столика на это время нет.",
-    freePlaces: "Свободных мест",
-    suggestedTables: "Рекомендуемые столы",
-
     submit: "Забронировать столик",
     submitting: "Отправка...",
 
@@ -148,7 +130,6 @@ const translations = {
     note: "Примечание",
 
     submitFailed: "Не удалось отправить бронирование",
-    availabilityFailed: "Не удалось проверить доступность",
 
     zones: {
       central: "Центральный зал",
@@ -184,11 +165,6 @@ const translations = {
     notesLabel: "Примітки",
     notesPlaceholder: "Додаткові побажання...",
 
-    checkingAvailability: "Перевіряємо доступність...",
-    noTable: "На цей час відповідного столика немає.",
-    freePlaces: "Вільних місць",
-    suggestedTables: "Рекомендовані столи",
-
     submit: "Забронювати столик",
     submitting: "Надсилання...",
 
@@ -198,7 +174,6 @@ const translations = {
     note: "Примітка",
 
     submitFailed: "Не вдалося надіслати бронювання",
-    availabilityFailed: "Не вдалося перевірити наявність",
 
     zones: {
       central: "Центральний зал",
@@ -234,6 +209,7 @@ async function postJson(url: string, payload: unknown) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "x-api-key": "sedorestorans2024",
     },
     body: JSON.stringify(payload),
   });
@@ -302,8 +278,6 @@ export default function ReservationSection() {
   const [zone, setZone] = useState("Centrālā zāle");
   const [notes, setNotes] = useState("");
 
-
-
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
@@ -320,14 +294,7 @@ export default function ReservationSection() {
   const timeRangeValid = !time || !endTime || endTime > time;
 
   const canSubmit =
-    !submitLoading &&
-    timeRangeValid &&
-    !!name.trim() &&
-    !!phone.trim() &&
-    !!date &&
-    !!time &&
-    !!endTime &&
-    !!zone;
+    !submitLoading && timeRangeValid && !!name.trim() && !!phone.trim() && !!date && !!time && !!endTime && !!zone;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -340,7 +307,6 @@ export default function ReservationSection() {
       setSubmitSuccess("");
 
       const payload = {
-        action: "create_from_frontend",
         name: name.trim(),
         phone: phone.trim(),
         email: email.trim(),
@@ -355,9 +321,11 @@ export default function ReservationSection() {
       const data = await postJson(RESERVATION_CREATE_URL, payload);
       const reservationId = data?.reservationId || data?.id || "";
       const warning = data?.warning || "";
+      const zonesUsed = Array.isArray(data?.zonesUsed) ? data.zonesUsed.join(", ") : "";
+      const tables = Array.isArray(data?.tableIds) ? data.tableIds.join(", ") : "";
 
       setSubmitSuccess(
-        `${t.success}\n${t.reservationId}: ${reservationId}\n${time}–${endTime}\n${t.saveId}${warning ? `\n\n${t.note}: ${warning}` : ""}`,
+        `${t.success}\n${t.reservationId}: ${reservationId}\n${time}–${endTime}${zonesUsed ? `\n${zonesUsed}` : ""}${tables ? `\n${tables}` : ""}\n${t.saveId}${warning ? `\n\n${t.note}: ${warning}` : ""}`,
       );
 
       setName("");
@@ -436,7 +404,10 @@ export default function ReservationSection() {
           </FieldShell>
 
           <div className="grid grid-cols-2 gap-3">
-            <FieldShell label={t.timeFromLabel} icon={<Clock size={18} className="shrink-0 text-amber-400 md:size-5" />}>
+            <FieldShell
+              label={t.timeFromLabel}
+              icon={<Clock size={18} className="shrink-0 text-amber-400 md:size-5" />}
+            >
               <div className="relative min-w-0">
                 <select value={time} onChange={(e) => setTime(e.target.value)} required className={selectClass}>
                   <option value="">{t.timePlaceholder}</option>
@@ -450,7 +421,10 @@ export default function ReservationSection() {
               </div>
             </FieldShell>
 
-            <FieldShell label={t.timeUntilLabel} icon={<Clock size={18} className="shrink-0 text-amber-400 md:size-5" />}>
+            <FieldShell
+              label={t.timeUntilLabel}
+              icon={<Clock size={18} className="shrink-0 text-amber-400 md:size-5" />}
+            >
               <div className="relative min-w-0">
                 <select value={endTime} onChange={(e) => setEndTime(e.target.value)} required className={selectClass}>
                   <option value="">{t.timePlaceholder}</option>
@@ -496,7 +470,6 @@ export default function ReservationSection() {
               <SelectChevron />
             </div>
           </FieldShell>
-
 
           <FieldShell
             label={t.notesLabel}
