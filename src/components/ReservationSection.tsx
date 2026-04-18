@@ -4,8 +4,8 @@ import { CalendarDays, Clock, Users, MessageSquare, Utensils, Send, ChevronDown 
 import { LanguageContext } from "@/App";
 import CancelReservationSection from "./CancelReservationSection";
 
-const RESERVATION_API_BASE = "https://summer-morning-793e.sedokafe.workers.dev";
-const RESERVATION_API_KEY = "sedorestorans2024";
+const RESERVATION_CREATE_URL =
+  "https://script.google.com/macros/s/AKfycbw59N1SiRRUfaFM-voVnn7AwFXUVWPE6-x3WXvNrCMz5jj2rJahcd15rCopxzu-W6gQfw/exec";
 
 const translations = {
   lv: {
@@ -234,7 +234,6 @@ async function postJson(url: string, payload: unknown) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": RESERVATION_API_KEY,
     },
     body: JSON.stringify(payload),
   });
@@ -341,6 +340,7 @@ export default function ReservationSection() {
       setSubmitSuccess("");
 
       const payload = {
+        action: "create_from_frontend",
         name: name.trim(),
         phone: phone.trim(),
         email: email.trim(),
@@ -352,7 +352,7 @@ export default function ReservationSection() {
         notes: notes.trim(),
       };
 
-      const data = await postJson(`${RESERVATION_API_BASE}/create`, payload);
+      const data = await postJson(RESERVATION_CREATE_URL, payload);
       const reservationId = data?.reservationId || data?.id || "";
       const warning = data?.warning || "";
 
