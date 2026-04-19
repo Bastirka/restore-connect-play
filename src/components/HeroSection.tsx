@@ -5,6 +5,9 @@ import { LanguageContext } from "@/App";
 
 const logoUrl = "https://i.postimg.cc/kGfcBv3j/Chat-GPT-Image-2026-g-19-marts-00-44-58.png";
 
+const mobileHeroVideoUrl =
+  "https://pub-4082646d93584a25b2be8c8d5ab6ffa3.r2.dev/copy_DF306E86-73B4-4F2F-AB72-00744D6487CE%20(1).mp4";
+
 const translations = {
   lv: {
     logoAlt: "SEDO logo",
@@ -42,7 +45,19 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-[100svh] overflow-hidden bg-[#0b0b0b]">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0b0b0b] via-[#101010] to-[#111111]" />
+      {/* Desktop background */}
+      <div className="absolute inset-0 hidden md:block bg-gradient-to-b from-[#0b0b0b] via-[#101010] to-[#111111]" />
+
+      {/* Mobile video background only */}
+      <div className="absolute inset-0 md:hidden">
+        <video className="h-full w-full object-cover" autoPlay muted loop playsInline preload="metadata">
+          <source src={mobileHeroVideoUrl} type="video/mp4" />
+        </video>
+      </div>
+
+      {/* Overlays */}
+      <div className="absolute inset-0 bg-black/45 md:bg-black/30" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/60" />
 
       <div className="relative z-10 flex min-h-[100svh] items-center justify-center px-4 py-20 sm:px-6 md:px-8">
         <motion.div
@@ -57,12 +72,12 @@ const HeroSection = () => {
             initial={{ opacity: 0, scale: 1.05 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.9, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-    loading="eager"
-    fetchPriority="high"
-    decoding="async"
-    width={400}
-    height={400}
-    className="mb-8 h-auto w-[220px] object-contain sm:w-[280px] md:mb-10 md:w-[340px] lg:w-[400px] drop-shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+            width={400}
+            height={400}
+            className="mb-8 h-auto w-[220px] object-contain sm:w-[280px] md:mb-10 md:w-[340px] lg:w-[400px] drop-shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
           />
 
           <motion.h1
