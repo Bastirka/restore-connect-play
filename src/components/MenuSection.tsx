@@ -453,7 +453,39 @@ const MenuSection = () => {
             sortOrder: Number(item.sortOrder || index + 1),
             sizeKey: String(item.sizeKey || "").trim(),
           }))
-          .filter((item) => item.category && item.groupName);
+          .filter((item) => {
+            const category = String(item.category || "").trim();
+            const groupName = String(item.groupName || "").trim();
+            const variantName = String(item.variantName || "").trim();
+            const description = String(item.description || "").trim();
+
+            if (!category || !groupName) return false;
+
+            const categoryNormalized = normalizeText(category);
+            const groupNameNormalized = normalizeText(groupName);
+            const variantNormalized = normalizeText(variantName);
+            const descriptionNormalized = normalizeText(description);
+
+            const looksLikeHeaderRow =
+              categoryNormalized === "category" ||
+              groupNameNormalized === "groupname" ||
+              groupNameNormalized === "groupname_ru" ||
+              groupNameNormalized === "groupname_en" ||
+              groupNameNormalized === "groupname_lv" ||
+              groupNameNormalized === "groupname_uk" ||
+              variantNormalized === "variantname" ||
+              variantNormalized === "variant_ru" ||
+              variantNormalized === "variant_en" ||
+              variantNormalized === "variant_lv" ||
+              variantNormalized === "variant_uk" ||
+              descriptionNormalized === "description" ||
+              descriptionNormalized === "desc_ru" ||
+              descriptionNormalized === "desc_en" ||
+              descriptionNormalized === "desc_lv" ||
+              descriptionNormalized === "desc_uk";
+
+            return !looksLikeHeaderRow;
+          });
 
         if (isMounted) {
           setMenuItems(normalized);
@@ -544,9 +576,14 @@ const MenuSection = () => {
 
   const sortedCategories = useMemo(() => {
     const ordered = categoryOrder.filter((category) => groupedByCategory[category]?.length);
-    const extra = Object.keys(groupedByCategory).filter(
-      (category) => !categoryOrder.includes(category as (typeof categoryOrder)[number]),
-    );
+    const extra = Object.keys(groupedByCategory).filter((category) => {
+      const normalized = normalizeText(category);
+
+      if (normalized === "category") return false;
+
+      return !categoryOrder.includes(category as (typeof categoryOrder)[number]);
+    });
+
     return [...ordered, ...extra];
   }, [groupedByCategory]);
 
