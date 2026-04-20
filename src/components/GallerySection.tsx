@@ -4,12 +4,13 @@ import { X, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import { LanguageContext } from "@/App";
-import img1 from "@/assets/food-kebab-plate.jpg";
-import img2 from "@/assets/food-kebab-plate2.jpg";
-import img3 from "@/assets/food-falafel.jpg";
-import img4 from "@/assets/food-grill.jpg";
 import img5 from "@/assets/food-wrap-plate.jpg";
 import img6 from "@/assets/restaurant-exterior.jpg";
+
+const img1 = "https://i.postimg.cc/SNDLzjmG/Screenshot-2026-04-20-at-17-34-49.png";
+const img2 = "https://i.postimg.cc/B64tgcgS/Screenshot-2026-04-20-at-17-38-20.png";
+const img3 = "https://i.postimg.cc/L6c9D34g/Screenshot-2026-04-20-at-17-39-34.png";
+const img4 = "https://i.postimg.cc/sgPrcF0T/Screenshot-2026-04-20-at-17-41-08.png";
 
 const translations = {
   lv: {
