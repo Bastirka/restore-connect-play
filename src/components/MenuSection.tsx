@@ -14,6 +14,7 @@ const translations = {
     error: "Neizdevās ielādēt ēdienkarti.",
     itemCount: "ēdieni",
     standard: "Standarta",
+    comingSoon: "Drīzumā",
     sizes: {
       small: "Mazais",
       big: "Lielais",
@@ -39,6 +40,7 @@ const translations = {
     error: "Failed to load menu.",
     itemCount: "dishes",
     standard: "Standard",
+    comingSoon: "Coming soon",
     sizes: {
       small: "Small",
       big: "Big",
@@ -64,6 +66,7 @@ const translations = {
     error: "Не удалось загрузить меню.",
     itemCount: "блюда",
     standard: "Стандарт",
+    comingSoon: "Скоро",
     sizes: {
       small: "Маленький",
       big: "Большой",
@@ -89,6 +92,7 @@ const translations = {
     error: "Не вдалося завантажити menu.",
     itemCount: "страви",
     standard: "Стандарт",
+    comingSoon: "Скоро",
     sizes: {
       small: "Малий",
       big: "Великий",
@@ -150,6 +154,8 @@ const categoryOrder = [
   "dzerieni",
   "deserti",
 ] as const;
+
+const comingSoonCategories = ["picas"];
 
 function normalizeText(value: string) {
   return String(value || "")
@@ -575,7 +581,10 @@ const MenuSection = () => {
   }, [menuItems]);
 
   const sortedCategories = useMemo(() => {
-    const ordered = categoryOrder.filter((category) => groupedByCategory[category]?.length);
+    const ordered = categoryOrder.filter(
+      (category) => groupedByCategory[category]?.length || comingSoonCategories.includes(category),
+    );
+
     const extra = Object.keys(groupedByCategory).filter((category) => {
       const normalized = normalizeText(category);
 
@@ -632,7 +641,7 @@ const MenuSection = () => {
     );
   }
 
-  if (!menuItems.length) {
+  if (!menuItems.length && !comingSoonCategories.length) {
     return (
       <section id="menu" className="py-24">
         <div className="container">
@@ -652,6 +661,8 @@ const MenuSection = () => {
 
         {sortedCategories.map((category) => {
           const dishes = groupedByCategory[category] || [];
+          const isComingSoon = comingSoonCategories.includes(category) && dishes.length === 0;
+
           const categoryTitle =
             dishes[0]?.categoryLabel ||
             t.categories[category as keyof typeof t.categories] ||
@@ -671,9 +682,18 @@ const MenuSection = () => {
                 className="flex w-full items-center justify-between p-6 text-left"
               >
                 <div>
-                  <h3 className="text-2xl font-bold text-white">{categoryTitle}</h3>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h3 className="text-2xl font-bold text-white">{categoryTitle}</h3>
+
+                    {isComingSoon ? (
+                      <span className="rounded-full border border-yellow-400/20 bg-yellow-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-yellow-300">
+                        {t.comingSoon}
+                      </span>
+                    ) : null}
+                  </div>
+
                   <p className="mt-1 text-sm text-white/50">
-                    {dishes.length} {t.itemCount}
+                    {isComingSoon ? t.comingSoon : `${dishes.length} ${t.itemCount}`}
                   </p>
                 </div>
 
@@ -685,10 +705,21 @@ const MenuSection = () => {
               </button>
 
               {openCategory === category && (
-                <div className="stagger-children grid gap-6 p-6 md:grid-cols-2 xl:grid-cols-3">
-                  {dishes.map((group, index) => (
-                    <MenuCard key={`${safeLang}-${group.key}`} group={group} t={t} eagerImage={index < 2} />
-                  ))}
+                <div className="p-6">
+                  {isComingSoon ? (
+                    <div className="flex min-h-[180px] items-center justify-center rounded-2xl border border-yellow-400/20 bg-gradient-to-br from-yellow-400/10 via-yellow-300/5 to-transparent text-center">
+                      <div>
+                        <p className="text-lg font-semibold text-yellow-300">{t.comingSoon}</p>
+                        <p className="mt-2 text-sm text-white/55">{categoryTitle}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="stagger-children grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                      {dishes.map((group, index) => (
+                        <MenuCard key={`${safeLang}-${group.key}`} group={group} t={t} eagerImage={index < 2} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
