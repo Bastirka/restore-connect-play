@@ -2,7 +2,9 @@ import { useContext } from "react";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { LanguageContext } from "@/App";
-import logoUrl from "@/assets/sedo_logo.png";
+
+const logoUrl =
+  "https://i.postimg.cc/50s4v4z1/Chat-GPT-Image-2026-g-28-apr-01-07-42.png";
 
 const mobileHeroVideoUrl =
   "https://pub-4082646d93584a25b2be8c8d5ab6ffa3.r2.dev/copy_DF306E86-73B4-4F2F-AB72-00744D6487CE%20(1).mp4";
@@ -61,7 +63,7 @@ const HeroSection = () => {
         </video>
       </div>
 
-      {/* Overlays */}
+      {/* Dark overlays */}
       <div className="absolute inset-0 bg-black/45 md:bg-black/30" />
       <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/60" />
 
@@ -77,10 +79,15 @@ const HeroSection = () => {
             alt={t.logoAlt}
             initial={{ opacity: 0, scale: 1.05 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.9, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            transition={{
+              duration: 0.9,
+              delay: 0.1,
+              ease: [0.22, 1, 0.36, 1],
+            }}
             loading="eager"
             fetchPriority="high"
             decoding="async"
+            draggable={false}
             width={400}
             height={400}
             className="mb-8 h-auto w-[220px] object-contain drop-shadow-[0_12px_40px_rgba(0,0,0,0.45)] sm:w-[280px] md:mb-10 md:w-[340px] lg:w-[400px]"
@@ -89,7 +96,11 @@ const HeroSection = () => {
           <motion.h1
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            transition={{
+              duration: 0.8,
+              delay: 0.2,
+              ease: [0.22, 1, 0.36, 1],
+            }}
             className="max-w-3xl text-3xl font-semibold tracking-tight text-white sm:text-4xl md:text-5xl"
           >
             {t.subtitle}
@@ -98,7 +109,11 @@ const HeroSection = () => {
           <motion.p
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            transition={{
+              duration: 0.8,
+              delay: 0.4,
+              ease: [0.22, 1, 0.36, 1],
+            }}
             className="mt-5 max-w-2xl text-sm leading-relaxed text-white/75 sm:text-base md:mt-6 md:text-lg"
           >
             {t.description}
@@ -107,7 +122,11 @@ const HeroSection = () => {
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            transition={{
+              duration: 0.8,
+              delay: 0.6,
+              ease: [0.22, 1, 0.36, 1],
+            }}
             className="mt-10 flex w-full max-w-xl flex-col items-center justify-center gap-4 sm:mt-12 sm:flex-row"
           >
             <motion.a
