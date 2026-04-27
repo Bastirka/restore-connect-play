@@ -4,7 +4,7 @@ import { ChevronDown } from "lucide-react";
 import { LanguageContext } from "@/App";
 
 const logoUrl =
-  "https://i.postimg.cc/CLkKrgTw/Chat-GPT-Image-2026-g-28-apr-01-14-08.png";
+  "https://i.postimg.cc/zBCdPvjt/Noforme-jums-bez-nosaukuma-(1).png";
 
 const mobileHeroVideoUrl =
   "https://pub-4082646d93584a25b2be8c8d5ab6ffa3.r2.dev/copy_DF306E86-73B4-4F2F-AB72-00744D6487CE%20(1).mp4";
