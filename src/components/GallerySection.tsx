@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+;import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
@@ -46,7 +46,7 @@ const translations = {
   },
 };
 
-const imageSources = [img1, img2, img3, img4, "https://i.postimg.cc/QMH5h3f5/food-wrap-plate.jpg", "https://i.postimg.cc/mgR6fB5Z/restaurant-exterior.jpg"];
+const imageSources = [img1, img2, img3, img4];
 
 const GallerySection = () => {
   const { lang } = useContext(LanguageContext);
