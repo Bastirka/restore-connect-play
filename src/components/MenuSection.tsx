@@ -4,7 +4,6 @@ import ScrollReveal from "@/components/ScrollReveal";
 import { LanguageContext } from "@/App";
 
 const MENU_API_URL = "https://sedo-menu-proxy.raivisbabris99.workers.dev";
-const R2_BASE_URL = "https://pub-ce27dafe278d4f219c7c1ca812bee1fb.r2.dev";
 
 const translations = {
   lv: {
@@ -112,6 +111,14 @@ type MenuItem = {
   sizeKey?: string;
 };
 
+type MenuVariant = {
+  variantName: string;
+  price: string;
+  image: string;
+  description: string;
+  sortOrder: number;
+};
+
 type MenuCardGroup = {
   key: string;
   id: string;
@@ -121,16 +128,7 @@ type MenuCardGroup = {
   description: string;
   image: string;
   sortOrder: number;
-  standardItem?: MenuItem;
-  smallItem?: MenuItem;
-  bigItem?: MenuItem;
-  otherItems: MenuItem[];
-  variants?: Array<{
-    variantName: string;
-    price: string;
-    image?: string;
-    description?: string;
-  }>;
+  variants: MenuVariant[];
 };
 
 const categoryOrder = [
@@ -160,6 +158,18 @@ function capitalizeFirst(text: string) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+function resolveMenuImageUrl(imageValue: string) {
+  const value = String(imageValue || "").trim();
+
+  if (!value) return "/placeholder.svg";
+
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+
+  return value;
+}
+
 function addPreconnect(url: string) {
   try {
     const origin = new URL(url).origin;
@@ -178,27 +188,10 @@ function addPreconnect(url: string) {
   }
 }
 
-function resolveMenuImageUrl(imageValue: string) {
-  const value = String(imageValue || "").trim();
-
-  if (!value) return "/placeholder.svg";
-
-  if (value.startsWith("http://") || value.startsWith("https://")) {
-    return value;
-  }
-
-  const cleaned = value.replace(/^\/+/, "");
-  return `${R2_BASE_URL}/${cleaned}`;
-}
-
-function isPlaceholderImage(src: string) {
-  return !src || src === "/placeholder.svg";
-}
-
 function detectVariantKind(item: MenuItem) {
   const sizeKey = normalizeText(item.sizeKey || "");
-  const variant = normalizeText(item.variantName);
-  const value = sizeKey || variant;
+  const variantName = normalizeText(item.variantName || "");
+  const value = sizeKey || variantName;
 
   if (value === "mazais" || value === "small" || value === "маленький" || value === "малий") {
     return "small";
@@ -219,6 +212,23 @@ function detectVariantKind(item: MenuItem) {
   }
 
   return "other";
+}
+
+function makeGroupKey(item: MenuItem) {
+  const category = normalizeText(item.category);
+  const groupName = normalizeText(item.groupName);
+
+  if (category === "deserti") {
+    return `${category}::${groupName}`;
+  }
+
+  const kind = detectVariantKind(item);
+
+  if (kind === "small" || kind === "big" || kind === "standard") {
+    return `${category}::${groupName}::${normalizeText(item.description)}`;
+  }
+
+  return `${category}::${groupName}::${normalizeText(item.description)}`;
 }
 
 const MenuImage = memo(function MenuImage({
@@ -315,17 +325,18 @@ function MenuCard({
   t: (typeof translations)[LangKey];
   eagerImage: boolean;
 }) {
-  const variants = group.variants || [];
   const [selectedVariant, setSelectedVariant] = useState(0);
 
   useEffect(() => {
     setSelectedVariant(0);
   }, [group.key]);
 
-  const activeVariant = variants[selectedVariant];
-  const priceText = activeVariant ? `${activeVariant.price} €` : "—";
-  const activeImage = activeVariant?.image || group.image;
-  const activeDesc = activeVariant?.description || group.description;
+  const variants = group.variants || [];
+  const activeVariant = variants[selectedVariant] || variants[0];
+
+  const activeImage = activeVariant?.image || group.image || "/placeholder.svg";
+  const activeDesc = activeVariant?.description || group.description || "";
+  const priceText = activeVariant?.price ? `${activeVariant.price} €` : "—";
 
   const imageAlt = [group.groupName, activeDesc, activeVariant?.variantName].filter(Boolean).join(" • ");
 
@@ -352,7 +363,7 @@ function MenuCard({
           <div className="mt-4 flex flex-wrap gap-2">
             {variants.map((variant, index) => (
               <button
-                key={`${variant.variantName}-${index}`}
+                key={`${variant.variantName}-${variant.price}-${index}`}
                 type="button"
                 onClick={() => setSelectedVariant(index)}
                 className={`rounded-full border px-3 py-1 text-sm font-medium transition-all ${
@@ -384,7 +395,6 @@ const MenuSection = () => {
 
   useEffect(() => {
     addPreconnect(MENU_API_URL);
-    addPreconnect(R2_BASE_URL);
   }, []);
 
   useEffect(() => {
@@ -443,6 +453,7 @@ const MenuSection = () => {
             const groupName = normalizeText(item.groupName);
             const variant = normalizeText(item.variantName);
             const description = normalizeText(item.description);
+            const price = normalizeText(item.price);
 
             if (!category || !groupName) return false;
 
@@ -462,7 +473,8 @@ const MenuSection = () => {
               description === "desc_ru" ||
               description === "desc_en" ||
               description === "desc_lv" ||
-              description === "desc_uk";
+              description === "desc_uk" ||
+              price === "price";
 
             return !looksLikeHeaderRow;
           });
@@ -491,39 +503,27 @@ const MenuSection = () => {
 
   const groupedByCategory = useMemo(() => {
     const categories: Record<string, MenuCardGroup[]> = {};
-    const byCardKey: Record<string, MenuCardGroup> = {};
+    const groups: Record<string, MenuCardGroup> = {};
 
     menuItems.forEach((item, index) => {
-      const normalizedCategory = normalizeText(item.category);
-      const isDessert = normalizedCategory === "deserti";
+      const category = normalizeText(item.category);
+      const key = makeGroupKey(item);
 
-      const cardKey = isDessert
-        ? [normalizedCategory, normalizeText(item.groupName)].join("::")
-        : [normalizedCategory, normalizeText(item.groupName), normalizeText(item.description)].join("::");
-
-      if (!byCardKey[cardKey]) {
-        byCardKey[cardKey] = {
-          key: cardKey,
+      if (!groups[key]) {
+        groups[key] = {
+          key,
           id: item.id || String(index + 1),
-          category: normalizedCategory,
+          category,
           categoryLabel: item.categoryLabel,
           groupName: item.groupName,
-          description: isDessert ? "" : item.description,
-          image: item.image,
+          description: item.description,
+          image: item.image || "/placeholder.svg",
           sortOrder: item.sortOrder || index + 1,
-          standardItem: undefined,
-          smallItem: undefined,
-          bigItem: undefined,
-          otherItems: [],
           variants: [],
         };
       }
 
-      const group = byCardKey[cardKey];
-
-      if (isPlaceholderImage(group.image) && !isPlaceholderImage(item.image)) {
-        group.image = item.image;
-      }
+      const group = groups[key];
 
       if (!group.categoryLabel && item.categoryLabel) {
         group.categoryLabel = item.categoryLabel;
@@ -533,86 +533,57 @@ const MenuSection = () => {
         group.sortOrder = item.sortOrder;
       }
 
-      const kind = detectVariantKind(item);
-
-      if (kind === "small" && !group.smallItem) {
-        group.smallItem = item;
-      } else if (kind === "big" && !group.bigItem) {
-        group.bigItem = item;
-      } else if (kind === "standard" && !group.standardItem && !isDessert) {
-        group.standardItem = item;
-      } else {
-        group.otherItems.push(item);
+      if ((!group.image || group.image === "/placeholder.svg") && item.image && item.image !== "/placeholder.svg") {
+        group.image = item.image;
       }
+
+      group.variants.push({
+        variantName: item.variantName || t.standard,
+        price: item.price,
+        image: item.image || "/placeholder.svg",
+        description: item.description || "",
+        sortOrder: item.sortOrder || index + 1,
+      });
     });
 
-    Object.values(byCardKey).forEach((group) => {
-      const allVariants: Array<{
-        variantName: string;
-        price: string;
-        image?: string;
-        description?: string;
-      }> = [];
+    Object.values(groups).forEach((group) => {
+      group.variants = group.variants
+        .filter((variant) => variant.price)
+        .sort((a, b) => {
+          const aKind = normalizeText(a.variantName);
+          const bKind = normalizeText(b.variantName);
 
-      if (group.smallItem) {
-        allVariants.push({
-          variantName: group.smallItem.variantName || t.sizes.small,
-          price: group.smallItem.price,
-          image: group.smallItem.image,
-          description: group.smallItem.description || "",
-        });
-      }
+          const order = (value: string) => {
+            if (value === "mazais" || value === "small" || value === "маленький" || value === "малий") return 1;
+            if (value === "standarta" || value === "standard" || value === "стандарт") return 2;
+            if (value === "lielais" || value === "big" || value === "large" || value === "большой" || value === "великий") return 3;
+            return 10;
+          };
 
-      if (group.standardItem) {
-        allVariants.push({
-          variantName: group.standardItem.variantName || t.sizes.standard,
-          price: group.standardItem.price,
-          image: group.standardItem.image,
-          description: group.standardItem.description || "",
-        });
-      }
+          const orderDiff = order(aKind) - order(bKind);
 
-      if (group.bigItem) {
-        allVariants.push({
-          variantName: group.bigItem.variantName || t.sizes.big,
-          price: group.bigItem.price,
-          image: group.bigItem.image,
-          description: group.bigItem.description || "",
-        });
-      }
+          if (orderDiff !== 0) return orderDiff;
 
-      group.otherItems
-        .slice()
-        .sort((a, b) => a.sortOrder - b.sortOrder)
-        .forEach((item) => {
-          allVariants.push({
-            variantName: item.variantName || item.groupName || t.standard,
-            price: item.price,
-            image: item.image,
-            description: item.description || "",
-          });
+          return a.sortOrder - b.sortOrder;
         });
 
-      group.variants = allVariants.filter((variant) => variant.price);
-
-      const firstVariantWithImage = group.variants.find((variant) => variant.image && !isPlaceholderImage(variant.image));
+      const firstVariantWithImage = group.variants.find(
+        (variant) => variant.image && variant.image !== "/placeholder.svg",
+      );
 
       if (firstVariantWithImage?.image) {
         group.image = firstVariantWithImage.image;
       }
-    });
 
-    Object.values(byCardKey).forEach((group) => {
-      const normalizedCategory = normalizeText(group.category);
-
-      if (!categories[normalizedCategory]) {
-        categories[normalizedCategory] = [];
+      if (group.variants[0]?.description) {
+        group.description = group.variants[0].description;
       }
 
-      categories[normalizedCategory].push({
-        ...group,
-        category: normalizedCategory,
-      });
+      if (!categories[group.category]) {
+        categories[group.category] = [];
+      }
+
+      categories[group.category].push(group);
     });
 
     Object.keys(categories).forEach((category) => {
@@ -620,7 +591,7 @@ const MenuSection = () => {
     });
 
     return categories;
-  }, [menuItems, t.sizes.big, t.sizes.small, t.sizes.standard, t.standard]);
+  }, [menuItems, t.standard]);
 
   const sortedCategories = useMemo(() => {
     const ordered = categoryOrder.filter(
