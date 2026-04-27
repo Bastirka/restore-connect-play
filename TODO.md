@@ -1,17 +1,25 @@
-# MenuSection.tsx Dessert Variants UI Improvement - In Progress
+# Universal Dessert Fix Plan (All Languages)
 
-**Current Status:**
-✅ 2 dessert cards (Baklava, Saldējums)
-❌ Variant buttons missing (Klasiskā/Ar saldējumu, Vaniļa/Šokolāde)
-❌ No price display in buttons
+**Information Gathered:**
+Current LV logic breaks EN (empty variants → broken labels)
+RU/UK hardcoded but inconsistent
+API dessert data language-inconsistent
 
-**Approved Plan Steps:**
-1. Create unified `variants[]` array in all MenuCardGroup (kebabs + desserts)
-2. MenuCard: selectedVariant state, render buttons `{name — price €}` yellow active
-3. Update price badge/desc/image on toggle
+**Plan:**
+1. Language-independent grouping: baklavaItems vs iceCreamItems using all-field keywords
+2. Build variants from actual found items or language fallbacks  
+3. Exactly 2 cards ALL languages: Baklava (2 variants) + Ice Cream (2 variants)
+4. UI identical to kebabs everywhere
 
-**Next:**
-- [x] Edit MenuSection.tsx with variants logic
-- [x] Test HMR localhost:8080/#menu Deserti
-- [ ] ✅ Complete
+**Details:**
+BAKLAWA keywords: 'baklava', 'баклава'
+ICE CREAM keywords: 'ice', 'saldēj', 'морож', 'мороз', 'vanil', 'ванил', 'шокол'
+MUTUALLY EXCLUSIVE groups
 
+Fallback labels per lang (variantName empty → use fallback)
+
+**Dependent Files:** MenuSection.tsx (groupedByCategory useMemo)
+
+**Followup:** Test all 4 langs → git commit → deploy
+
+✅ Approved - implementing universal dessert grouping + fallbacks
