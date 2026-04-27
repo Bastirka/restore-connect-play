@@ -235,7 +235,7 @@ const Footer = () => {
       >
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <span className="font-display text-2xl font-bold text-primary">SEDO</span>
+            <span className="font-display text-2xl font-bold text-primary">SEDO Kebabi un Picas</span>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               {t.brandText}
               <br />

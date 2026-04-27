@@ -11,29 +11,29 @@ const mobileHeroVideoUrl =
 const translations = {
   lv: {
     logoAlt: "SEDO logo",
-    subtitle: "Kebabi Rēzeknē",
-    description: "Svaigi kebabi un ātrā ēdināšana no kvalitatīvām sastāvdaļām.",
+    subtitle: "Kebabi un picas Rēzeknē",
+    description: "Svaigi kebabi un gardas picas no kvalitatīvām sastāvdaļām.",
     menuBtn: "Skatīt ēdienkarti",
     orderBtn: "Rezervēt galdiņu",
   },
   en: {
     logoAlt: "SEDO logo",
-    subtitle: "Kebabs in Rezekne",
-    description: "Fresh kebabs and fast food made from quality ingredients.",
+    subtitle: "Kebabs & Pizza in Rezekne",
+    description: "Fresh kebabs and delicious pizzas made from quality ingredients.",
     menuBtn: "View menu",
     orderBtn: "Reserve a table",
   },
   ru: {
     logoAlt: "Логотип SEDO",
-    subtitle: "Кебабы в Резекне",
-    description: "Свежие кебабы и быстрое питание из качественных ингредиентов.",
+    subtitle: "Кебабы и Пицца в Резекне",
+    description: "Свежие кебабы и вкусная пицца из качественных ингредиентов.",
     menuBtn: "Смотреть меню",
     orderBtn: "Забронировать столик",
   },
   uk: {
     logoAlt: "Логотип SEDO",
-    subtitle: "Кебаби в Резекне",
-    description: "Свіжі кебаби та швидке харчування з якісних інгредієнтів.",
+    subtitle: "Кебаби та Піца в Резекне",
+    description: "Свіжі кебаби та смачна піца з якісних інгредієнтів.",
     menuBtn: "Переглянути меню",
     orderBtn: "Забронювати столик",
   },
@@ -73,7 +73,7 @@ const HeroSection = () => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.9, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
             loading="eager"
-            fetchPriority="high"
+            fetchpriority="high"
             decoding="async"
             width={400}
             height={400}

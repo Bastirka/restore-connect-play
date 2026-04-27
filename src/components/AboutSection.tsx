@@ -14,7 +14,7 @@ const translations = {
     title1: "Turku tradīcijas",
     title2: "Rēzeknē",
     description:
-      "SEDO restorāns piedāvā svaigus kebabus un ātrās maltītes, kas gatavotas no kvalitatīvām sastāvdaļām. Pie mums varat baudīt ēdienu uz vietas, paņemt to līdzņemšanai vai izmantot piegādes iespēju.",
+"SEDO Kebabi un Picas piedāvā svaigus kebabus un piccas, kas gatavotas no kvalitatīvām sastāvdaļām. Pie mums varat baudīt ēdienu uz vietas, paņemt to līdzņemšanai vai izmantot piegādes iespēju.",
     googleRating: "Google vērtējums",
     reviews: "Atsauksmes",
     since: "Kopš",
@@ -26,7 +26,7 @@ const translations = {
     title1: "Turkish traditions",
     title2: "in Rezekne",
     description:
-      "SEDO restaurant offers fresh kebabs and quick meals made from quality ingredients. You can enjoy your meal on site, take it away or use delivery options.",
+"SEDO Kebabs & Pizza offers fresh kebabs and pizzas made from quality ingredients. You can enjoy your meal on site, take it away or use delivery options.",
     googleRating: "Google rating",
     reviews: "Reviews",
     since: "Since",
@@ -38,7 +38,7 @@ const translations = {
     title1: "Турецкие традиции",
     title2: "в Резекне",
     description:
-      "Ресторан SEDO предлагает свежие кебабы и быстрые блюда, приготовленные из качественных ингредиентов. У нас можно поесть на месте, взять еду с собой или воспользоваться доставкой.",
+"SEDO Кебабы и Пицца предлагает свежие кебабы и пиццу, приготовленные из качественных ингредиентов. У нас можно поесть на месте, взять еду с собой или воспользоваться доставкой.",
     googleRating: "Рейтинг Google",
     reviews: "Отзывы",
     since: "С",
@@ -50,7 +50,7 @@ const translations = {
     title1: "Турецькі традиції",
     title2: "у Резекне",
     description:
-      "Ресторан SEDO пропонує свіжі кебаби та швидкі страви, приготовані з якісних інгредієнтів. У нас можна поїсти на місці, взяти їжу із собою або скористатися доставкою.",
+"SEDO Кебаби та Піца пропонує свіжі кебаби та піцу, приготовані з якісних інгредієнтів. У нас можна поїсти на місці, взяти їжу із собою або скористатися доставкою.",
     googleRating: "Рейтинг Google",
     reviews: "Відгуки",
     since: "З",

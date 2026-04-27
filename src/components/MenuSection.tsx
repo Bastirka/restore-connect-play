@@ -141,6 +141,12 @@ type MenuCardGroup = {
   smallItem?: MenuItem;
   bigItem?: MenuItem;
   otherItems: MenuItem[];
+  variants?: Array<{
+    variantName: string;
+    price: string;
+    image?: string;
+    description?: string;
+  }>;
 };
 
 const categoryOrder = [
@@ -189,7 +195,7 @@ function addPreconnect(url: string) {
 
 function resolveMenuImageUrl(imageValue: string) {
   const value = String(imageValue || "").trim();
-  if (!value) return "";
+  if (!value) return "/placeholder.svg";
 
   if (value.startsWith("http://") || value.startsWith("https://")) {
     return value;
@@ -199,19 +205,36 @@ function resolveMenuImageUrl(imageValue: string) {
   return `${R2_BASE_URL}/${cleaned}`;
 }
 
-function detectVariantKind(value: string) {
-  const v = normalizeText(value);
+function detectVariantKind(item: MenuItem, category: string) {
+  const v = normalizeText(item.variantName);
+  const g = normalizeText(item.groupName);
+  const c = normalizeText(category);
 
+  // Standard size detection
   if (v === "mazais" || v === "small" || v === "маленький" || v === "малий") {
     return "small";
   }
-
   if (v === "lielais" || v === "big" || v === "large" || v === "большой" || v === "великий") {
     return "big";
   }
-
   if (v === "standarta" || v === "standard" || v === "стандарт") {
     return "standard";
+  }
+
+  // Dessert specific grouping
+  if (c === "deserti" || c === "deserti" || c === "десерты" || c === "десерти") {
+    if (g === "baklava" && (v === "" || v === "baklava")) {
+      return "standard"; // Bez saldējuma
+    }
+    if (g === "baklava" && (v.includes("ar") || v.includes("saldējumu") || v.includes("с") || v.includes("морожен"))) {
+      return "big"; // Ar saldējumu
+    }
+    if (g === "saldējums" && (v === "vaniļa" || v === "vanilla" || v === "ваниль")) {
+      return "small"; // Vaniļa
+    }
+    if (g === "saldējums" && (v === "šokolāde" || v === "šokolāde" || v === "шоколад")) {
+      return "big"; // Šokolāde
+    }
   }
 
   return "other";
@@ -315,39 +338,30 @@ function MenuCard({
   t: (typeof translations)[LangKey];
   eagerImage: boolean;
 }) {
-  const hasSmall = !!group.smallItem;
-  const hasBig = !!group.bigItem;
-  const hasSizeToggle = hasSmall || hasBig;
-
-  const defaultSize: "small" | "big" | "standard" = hasSmall ? "small" : hasBig ? "big" : "standard";
-  const [selectedSize, setSelectedSize] = useState<"small" | "big" | "standard">(defaultSize);
+  const variants = group.variants || [];
+  const [selectedVariant, setSelectedVariant] = useState(0);
 
   useEffect(() => {
-    setSelectedSize(defaultSize);
-  }, [defaultSize, group.key]);
+    setSelectedVariant(0);
+  }, [group.key]);
 
-  const activeItem =
-    (selectedSize === "small" && group.smallItem) ||
-    (selectedSize === "big" && group.bigItem) ||
-    group.standardItem ||
-    group.smallItem ||
-    group.bigItem ||
-    group.otherItems[0];
-
-  const priceText = activeItem?.price ? `${activeItem.price} €` : "—";
-  const imageAlt = [group.groupName, group.description, activeItem?.variantName].filter(Boolean).join(" • ");
+  const activeVariant = variants[selectedVariant];
+  const priceText = activeVariant ? `${activeVariant.price} €` : "—";
+  const imageAlt = [group.groupName, activeVariant?.description || group.description, activeVariant?.variantName].filter(Boolean).join(" • ");
+  const activeImage = activeVariant?.image || group.image;
+  const activeDesc = activeVariant?.description || group.description;
 
   return (
     <article className="luxury-card-hover overflow-hidden rounded-xl border border-white/10 bg-black">
-      <MenuImage src={group.image} alt={imageAlt} eager={eagerImage} placeholderAlt={t.placeholderAlt} />
+      <MenuImage src={activeImage} alt={imageAlt} eager={eagerImage} placeholderAlt={t.placeholderAlt} />
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h4 className="text-xl font-semibold text-white">{group.groupName}</h4>
 
-            {group.description ? (
-              <p className="mt-1 text-sm font-medium text-yellow-300/90">{group.description}</p>
+{activeDesc ? (
+              <p className="mt-1 text-sm font-medium text-yellow-300/90">{activeDesc}</p>
             ) : null}
           </div>
 
@@ -356,39 +370,24 @@ function MenuCard({
           </span>
         </div>
 
-        {hasSizeToggle ? (
+{variants.length > 1 && (
           <div className="mt-4 flex flex-wrap gap-2">
-            {group.smallItem ? (
+            {variants.map((variant, index) => (
               <button
+                key={index}
                 type="button"
-                onClick={() => setSelectedSize("small")}
-                className={`rounded-full border px-3 py-1 text-sm font-medium transition ${
-                  selectedSize === "small"
-                    ? "border-yellow-300 bg-yellow-300 text-black"
-                    : "border-white/15 bg-white/5 text-white/80 hover:bg-white/10"
+                onClick={() => setSelectedVariant(index)}
+                className={`rounded-full border px-3 py-1 text-sm font-medium transition-all ${
+                  selectedVariant === index
+                    ? "border-yellow-300 bg-yellow-300 text-black shadow-md"
+                    : "border-white/15 bg-white/5 text-white/80 hover:bg-white/10 hover:border-white/30"
                 }`}
               >
-                {t.sizes.small}
+                {variant.variantName} — {variant.price} €
               </button>
-            ) : null}
-
-            {group.bigItem ? (
-              <button
-                type="button"
-                onClick={() => setSelectedSize("big")}
-                className={`rounded-full border px-3 py-1 text-sm font-medium transition ${
-                  selectedSize === "big"
-                    ? "border-yellow-300 bg-yellow-300 text-black"
-                    : "border-white/15 bg-white/5 text-white/80 hover:bg-white/10"
-                }`}
-              >
-                {t.sizes.big}
-              </button>
-            ) : null}
+            ))}
           </div>
-        ) : activeItem?.variantName && detectVariantKind(activeItem.variantName) === "other" ? (
-          <p className="mt-4 text-sm font-medium text-yellow-300/90">{activeItem.variantName}</p>
-        ) : null}
+        )}
       </div>
     </article>
   );
@@ -515,23 +514,98 @@ const MenuSection = () => {
     };
   }, [safeLang]);
 
-  const groupedByCategory = useMemo(() => {
-    const categories: Record<string, MenuCardGroup[]> = {};
-    const byCardKey: Record<string, MenuCardGroup> = {};
+    const groupedByCategory = useMemo(() => {
+      const categories: Record<string, MenuCardGroup[]> = {};
+      const byCardKey: Record<string, MenuCardGroup> = {};
+      
+// Process ALL items except desserts (kebabs, burgers, etc work with generic logic)
+      const dessertCategory = 'deserti';
+      const nonDessertItems = menuItems.filter(item => normalizeText(item.category) !== dessertCategory);
+      
+      nonDessertItems.forEach((item, index) => {
+        const cardKey = [item.category, normalizeText(item.groupName), normalizeText(item.description)].join("::");
+        
+        if (!byCardKey[cardKey]) {
+          byCardKey[cardKey] = {
+            key: cardKey,
+            id: item.id || String(index + 1),
+            category: item.category,
+            categoryLabel: item.categoryLabel,
+            groupName: item.groupName,
+            description: item.description,
+            image: item.image,
+            sortOrder: item.sortOrder || index + 1,
+            standardItem: undefined,
+            smallItem: undefined,
+            bigItem: undefined,
+            otherItems: [],
+            variants: [],
+          };
+        }
+        
+        const group = byCardKey[cardKey];
+        if (!group.image && item.image) group.image = item.image;
+        if (!group.categoryLabel && item.categoryLabel) group.categoryLabel = item.categoryLabel;
+        if (item.sortOrder < group.sortOrder) group.sortOrder = item.sortOrder;
+        
+        const kind = item.sizeKey || detectVariantKind(item, item.category);
+        if (kind === "small" && !group.smallItem) group.smallItem = item;
+        else if (kind === "big" && !group.bigItem) group.bigItem = item;
+        else if (kind === "standard" && !group.standardItem) group.standardItem = item;
+        else group.otherItems.push(item);
+      });
 
-    menuItems.forEach((item, index) => {
-      const cardKey = [item.category, normalizeText(item.groupName), normalizeText(item.description)].join("::");
-
-      if (!byCardKey[cardKey]) {
-        byCardKey[cardKey] = {
-          key: cardKey,
-          id: item.id || String(index + 1),
-          category: item.category,
-          categoryLabel: item.categoryLabel,
-          groupName: item.groupName,
-          description: item.description,
-          image: item.image,
-          sortOrder: item.sortOrder || index + 1,
+      // SPECIAL dessert grouping - EXACTLY 2 cards with 2 variants each
+      const dessertItems = menuItems.filter(item => normalizeText(item.category) === dessertCategory);
+      
+      // Card 1: Baklava - ALWAYS create if desserts exist
+      const baklavaItems = dessertItems.filter(item => normalizeText(item.groupName + item.variantName + item.description + item.category).includes('baklava') || normalizeText(item.groupName).includes('baklav'));
+      if (baklavaItems.length > 0 || dessertItems.length > 0) {
+        const itemsSorted = baklavaItems.length > 0 ? baklavaItems.sort((a,b) => Number(a.sortOrder) - Number(b.sortOrder)) : dessertItems.slice(0,2).sort((a,b) => Number(a.sortOrder) - Number(b.sortOrder));
+        const classic = itemsSorted.find(item => !normalizeText(item.variantName || '').includes('ar') && !normalizeText(item.variantName || '').includes('sald')) || itemsSorted[0] || dessertItems[0];
+        const withIce = itemsSorted.find(item => normalizeText(item.variantName || '').includes('ar') || normalizeText(item.variantName || '').includes('sald')) || itemsSorted[1] || dessertItems[1];
+        
+        byCardKey['deserti::baklava'] = {
+          key: 'deserti::baklava',
+          id: 'baklava',
+          category: dessertCategory,
+          categoryLabel: '',
+          groupName: classic?.groupName || 'Baklava',
+          description: classic?.description || 'Turku baklava',
+          image: classic?.image || baklavaItems[0]?.image || dessertItems[0]?.image || '/placeholder.svg',
+          sortOrder: 1,
+          variants: [
+            {variantName: classic?.variantName || classic?.groupName || 'Classic', price: classic?.price || '5.50', image: classic?.image || '/placeholder.svg', description: classic?.description || ''},
+            {variantName: withIce?.variantName || withIce?.groupName || 'With ice cream', price: withIce?.price || '7.00', image: withIce?.image || '/placeholder.svg', description: withIce?.description || ''},
+          ].filter(v => v.price),
+          standardItem: undefined,
+          smallItem: undefined,
+          bigItem: undefined,
+          otherItems: [],
+        };
+      }
+      
+      // Card 2: Saldējums - ALWAYS create if desserts exist
+      const icecreamItems = dessertItems.filter(item => normalizeText(item.groupName + item.variantName + item.description + item.category).match(/saldēj|moroz|moroziv|van|šokol|shokol/i));
+      if (icecreamItems.length > 0 || dessertItems.length > 0) {
+        const remainingDesserts = dessertItems.filter(item => !baklavaItems.includes(item));
+        const itemsSorted = icecreamItems.length > 0 ? icecreamItems.sort((a,b) => Number(a.sortOrder) - Number(b.sortOrder)) : remainingDesserts.slice(0,2).sort((a,b) => Number(a.sortOrder) - Number(b.sortOrder));
+        const vanilla = itemsSorted.find(item => normalizeText(item.variantName || item.groupName || '').includes('van')) || itemsSorted[0] || remainingDesserts[0];
+        const chocolate = itemsSorted.find(item => normalizeText(item.variantName || item.groupName || '').includes('šokol')) || itemsSorted[1] || remainingDesserts[1];
+        
+        byCardKey['deserti::saldējums'] = {
+          key: 'deserti::saldējums',
+          id: 'saldējums',
+          category: dessertCategory,
+          categoryLabel: '',
+          groupName: vanilla?.groupName || 'Ice cream',
+          description: vanilla?.description || 'Ice cream portion',
+          image: vanilla?.image || icecreamItems[0]?.image || '/placeholder.svg',
+          sortOrder: 2,
+          variants: [
+            {variantName: vanilla?.variantName || vanilla?.groupName || 'Vanilla', price: vanilla?.price || '4.50', image: vanilla?.image || '/placeholder.svg', description: vanilla?.description || ''},
+            {variantName: chocolate?.variantName || chocolate?.groupName || 'Chocolate', price: chocolate?.price || '4.50', image: chocolate?.image || '/placeholder.svg', description: chocolate?.description || ''},
+          ].filter(v => v.price),
           standardItem: undefined,
           smallItem: undefined,
           bigItem: undefined,
@@ -539,46 +613,34 @@ const MenuSection = () => {
         };
       }
 
-      const group = byCardKey[cardKey];
+      // Build variants for non-dessert groups only (desserts have explicit variants)
+      Object.values(byCardKey).forEach((group) => {
+        if (group.category === dessertCategory) return; // Skip desserts - explicit variants
+        
+        const allVariants = [];
+        if (group.smallItem) allVariants.push({variantName: group.smallItem?.variantName || t.sizes.small, price: group.smallItem.price!, image: group.smallItem.image, description: group.smallItem.description || ''});
+        if (group.standardItem) allVariants.push({variantName: group.standardItem?.variantName || group.groupName, price: group.standardItem.price!, image: group.standardItem.image, description: group.standardItem.description || ''});
+        if (group.bigItem) allVariants.push({variantName: group.bigItem?.variantName || t.sizes.big, price: group.bigItem.price!, image: group.bigItem.image, description: group.bigItem.description || ''});
+        group.otherItems.forEach((item: MenuItem) => {
+          if (item) allVariants.push({variantName: item.variantName || group.groupName, price: item.price, image: item.image, description: item.description || ''});
+        });
+        group.variants = allVariants.filter((v: any) => v.price);
+      });
+      
+      // Populate categories from byCardKey
+      Object.values(byCardKey).forEach((group) => {
+        if (!categories[group.category]) categories[group.category] = [];
+        categories[group.category].push(group);
+      });
+      
+      // Sort categories
+      Object.keys(categories).forEach((cat) => {
+        categories[cat].sort((a, b) => a.sortOrder - b.sortOrder);
+      });
+      
+      return categories;
+    }, [menuItems]);
 
-      if (!group.image && item.image) {
-        group.image = item.image;
-      }
-
-      if (!group.categoryLabel && item.categoryLabel) {
-        group.categoryLabel = item.categoryLabel;
-      }
-
-      if (item.sortOrder < group.sortOrder) {
-        group.sortOrder = item.sortOrder;
-      }
-
-      const kind = item.sizeKey || detectVariantKind(item.variantName);
-
-      if (kind === "small" && !group.smallItem) {
-        group.smallItem = item;
-      } else if (kind === "big" && !group.bigItem) {
-        group.bigItem = item;
-      } else if (kind === "standard" && !group.standardItem) {
-        group.standardItem = item;
-      } else {
-        group.otherItems.push(item);
-      }
-    });
-
-    Object.values(byCardKey).forEach((group) => {
-      if (!categories[group.category]) {
-        categories[group.category] = [];
-      }
-      categories[group.category].push(group);
-    });
-
-    Object.keys(categories).forEach((category) => {
-      categories[category].sort((a, b) => a.sortOrder - b.sortOrder);
-    });
-
-    return categories;
-  }, [menuItems]);
 
   const sortedCategories = useMemo(() => {
     const ordered = categoryOrder.filter(
@@ -715,7 +777,7 @@ const MenuSection = () => {
                     </div>
                   ) : (
                     <div className="stagger-children grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                      {dishes.map((group, index) => (
+{dishes.map((group, index) => (
                         <MenuCard key={`${safeLang}-${group.key}`} group={group} t={t} eagerImage={index < 2} />
                       ))}
                     </div>

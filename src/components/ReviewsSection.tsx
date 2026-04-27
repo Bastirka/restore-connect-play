@@ -181,7 +181,7 @@ function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
                   relative_time_description: review?.relative_time_description || "",
                   time: typeof review?.time === "number" ? review.time : 0,
                 }))
-                .filter((review: Review) => review.text.length > 0)
+                .filter((review: Review) => review.text.length > 0 && review.rating >= 4)
             : [];
 
           resolve({
@@ -249,13 +249,10 @@ const ReviewsSection = () => {
   const reviewList = useMemo(() => {
     if (!placeData?.reviews?.length) return [];
 
-    return [...placeData.reviews]
-      .sort((a, b) => {
-        const timeDiff = (b.time || 0) - (a.time || 0);
-        if (timeDiff !== 0) return timeDiff;
-        return (b.rating || 0) - (a.rating || 0);
-      })
-      .slice(0, 3);
+    const filteredReviews = placeData.reviews.filter(r => r.rating >= 4);
+    return [...filteredReviews]
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .slice(0, 5);
   }, [placeData]);
 
   return (
@@ -341,7 +338,7 @@ const ReviewsSection = () => {
                 </div>
               ) : (
                 <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-center text-white/60">
-                  {t.noReviews}
+                  Šobrīd tiek rādītas atlasītās Google atsauksmes.
                 </div>
               )}
             </>

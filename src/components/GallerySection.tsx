@@ -4,8 +4,8 @@ import { X, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import { LanguageContext } from "@/App";
-import img5 from "@/assets/food-wrap-plate.jpg";
-import img6 from "@/assets/restaurant-exterior.jpg";
+// import img5 from "@/assets/food-wrap-plate.jpg";
+// import img6 from "@/assets/restaurant-exterior.jpg";
 
 const img1 = "https://i.postimg.cc/SNDLzjmG/Screenshot-2026-04-20-at-17-34-49.png";
 const img2 = "https://i.postimg.cc/B64tgcgS/Screenshot-2026-04-20-at-17-38-20.png";
@@ -23,7 +23,7 @@ const translations = {
       "Falafels",
       "Grilēta gaļa",
       "Kebaba wraps",
-      "SEDO restorāns",
+"SEDO Kebabi un Picas",
     ],
   },
   en: {
@@ -36,17 +36,17 @@ const translations = {
     badge: "Фото",
     title: "Галерея",
     close: "Закрыть",
-    images: ["Тарелка кебаба", "Тарелка кебаба с салатом", "Фалафель", "Жареное мясо", "Кебаб-ролл", "Ресторан SEDO"],
+    images: ["Тарелка кебаба", "Тарелка кебаба с салатом", "Фалафель", "Жареное мясо", "Кебаб-ролл", "SEDO Кебабы и Пицца"],
   },
   uk: {
     badge: "Фото",
     title: "Галерея",
     close: "Закрити",
-    images: ["Тарілка кебабу", "Тарілка кебабу з салатом", "Фалафель", "Смажене м'ясо", "Кебаб-рол", "Ресторан SEDO"],
+    images: ["Тарілка кебабу", "Тарілка кебабу з салатом", "Фалафель", "Смажене м'ясо", "Кебаб-рол", "SEDO Кебаби та Піца"],
   },
 };
 
-const imageSources = [img1, img2, img3, img4, img5, img6];
+const imageSources = [img1, img2, img3, img4, "https://i.postimg.cc/QMH5h3f5/food-wrap-plate.jpg", "https://i.postimg.cc/mgR6fB5Z/restaurant-exterior.jpg"];
 
 const GallerySection = () => {
   const { lang } = useContext(LanguageContext);
