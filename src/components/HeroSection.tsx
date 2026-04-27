@@ -2,8 +2,7 @@ import { useContext } from "react";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { LanguageContext } from "@/App";
-
-const logoUrl = "https://i.postimg.cc/kGfcBv3j/Chat-GPT-Image-2026-g-19-marts-00-44-58.png";
+import logoUrl from "@/assets/sedo_logo.png";
 
 const mobileHeroVideoUrl =
   "https://pub-4082646d93584a25b2be8c8d5ab6ffa3.r2.dev/copy_DF306E86-73B4-4F2F-AB72-00744D6487CE%20(1).mp4";
@@ -46,11 +45,18 @@ const HeroSection = () => {
   return (
     <section className="relative min-h-[100svh] overflow-hidden bg-[#0b0b0b]">
       {/* Desktop background */}
-      <div className="absolute inset-0 hidden md:block bg-gradient-to-b from-[#0b0b0b] via-[#101010] to-[#111111]" />
+      <div className="absolute inset-0 hidden bg-gradient-to-b from-[#0b0b0b] via-[#101010] to-[#111111] md:block" />
 
       {/* Mobile video background only */}
       <div className="absolute inset-0 md:hidden">
-        <video className="h-full w-full object-cover" autoPlay muted loop playsInline preload="metadata">
+        <video
+          className="h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+        >
           <source src={mobileHeroVideoUrl} type="video/mp4" />
         </video>
       </div>
@@ -73,11 +79,11 @@ const HeroSection = () => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.9, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
             loading="eager"
-            fetchpriority="high"
+            fetchPriority="high"
             decoding="async"
             width={400}
             height={400}
-            className="mb-8 h-auto w-[220px] object-contain sm:w-[280px] md:mb-10 md:w-[340px] lg:w-[400px] drop-shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
+            className="mb-8 h-auto w-[220px] object-contain drop-shadow-[0_12px_40px_rgba(0,0,0,0.45)] sm:w-[280px] md:mb-10 md:w-[340px] lg:w-[400px]"
           />
 
           <motion.h1
