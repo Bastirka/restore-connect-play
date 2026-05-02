@@ -171,3 +171,63 @@ select:focus {
   transform: scaleX(1);
   transform-origin: left;
 }
+
+/* Android / Xiaomi mobile navbar fix */
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+html {
+  scroll-padding-top: 90px;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+}
+
+nav {
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  pointer-events: auto !important;
+  isolation: isolate;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+nav * {
+  pointer-events: auto;
+}
+
+button,
+a {
+  touch-action: manipulation;
+}
+
+/* Mobile dropdown from Navbar.tsx */
+#mobile-navigation {
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: 4rem !important;
+  z-index: 2147483646 !important;
+  pointer-events: auto !important;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Sections should not hide under fixed navbar */
+section[id],
+div[id] {
+  scroll-margin-top: 90px;
+}
+
+/* Android sometimes lets animated/absolute layers block clicks */
+[data-radix-popper-content-wrapper],
+.nav-link-underline,
+.nav-link-underline::after {
+  pointer-events: auto;
+}
