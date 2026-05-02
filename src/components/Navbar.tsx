@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useContext } from "react";
-import type { MouseEvent } from "react";
+import type { MouseEvent, PointerEvent, KeyboardEvent } from "react";
 import { Menu, X, MapPin, ShoppingBag } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LanguageContext } from "@/App";
@@ -76,97 +76,139 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 40);
+    };
 
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
 
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   useEffect(() => {
-    const onResize = () => {
+    const closeOnResize = () => {
       if (window.innerWidth >= 768) {
         setOpen(false);
       }
     };
 
-    const onEscape = (e: KeyboardEvent) => {
+    const closeOnEscape = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Escape") {
         setOpen(false);
       }
     };
 
-    window.addEventListener("resize", onResize);
-    window.addEventListener("keydown", onEscape);
+    window.addEventListener("resize", closeOnResize);
+    window.addEventListener("keydown", closeOnEscape);
 
     return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("keydown", onEscape);
+      window.removeEventListener("resize", closeOnResize);
+      window.removeEventListener("keydown", closeOnEscape);
     };
+  }, []);
+
+  const scrollToSection = useCallback((href: string) => {
+    if (href === "#") {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + window.location.search
+      );
+
+      return;
+    }
+
+    const id = href.replace("#", "");
+    const el = document.getElementById(id);
+
+    if (!el) {
+      window.location.hash = href;
+      return;
+    }
+
+    const navOffset = window.innerWidth >= 768 ? 92 : 76;
+    const targetY = el.getBoundingClientRect().top + window.scrollY - navOffset;
+
+    window.scrollTo({
+      top: Math.max(0, targetY),
+      behavior: "smooth",
+    });
+
+    window.history.replaceState(null, "", href);
   }, []);
 
   const handleNavClick = useCallback(
     (e: MouseEvent<HTMLAnchorElement>, href: string) => {
       e.preventDefault();
-
-      if (href === "#") {
-        setOpen(false);
-
-        requestAnimationFrame(() => {
-          window.scrollTo({
-            top: 0,
-            behavior: "smooth",
-          });
-        });
-
-        window.history.replaceState(
-          null,
-          "",
-          window.location.pathname + window.location.search
-        );
-
-        return;
-      }
-
-      const id = href.replace("#", "");
-      const el = document.getElementById(id);
+      e.stopPropagation();
 
       setOpen(false);
 
-      if (!el) {
-        window.location.hash = href;
-        return;
-      }
-
-      const navOffset = window.innerWidth >= 768 ? 92 : 76;
-      const y = el.getBoundingClientRect().top + window.scrollY - navOffset;
-
       requestAnimationFrame(() => {
-        window.scrollTo({
-          top: Math.max(0, y),
-          behavior: "smooth",
-        });
+        scrollToSection(href);
       });
+    },
+    [scrollToSection]
+  );
 
-      window.history.replaceState(null, "", href);
+  const toggleMobileMenu = useCallback(
+    (e: PointerEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      setOpen((prev) => !prev);
     },
     []
   );
 
+  const handleMenuKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLButtonElement>) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        e.stopPropagation();
+
+        setOpen((prev) => !prev);
+      }
+    },
+    []
+  );
+
+  const handleLanguageClick = useCallback(
+    (item: Language) => {
+      setLang(item);
+    },
+    [setLang]
+  );
+
   return (
     <nav
-      className={`fixed left-0 right-0 top-0 z-[99999] pointer-events-auto transition-all duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
+      className={`fixed left-0 right-0 top-0 pointer-events-auto transition-all duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
         scrolled || open
           ? "border-b border-border/50 bg-background/95 shadow-lg shadow-background/20 backdrop-blur-xl"
           : "bg-transparent"
       }`}
+      style={{
+        zIndex: 2147483647,
+        pointerEvents: "auto",
+        isolation: "isolate",
+        transform: "translateZ(0)",
+        WebkitTransform: "translateZ(0)",
+      }}
     >
-      <div className="container relative z-[100001] flex h-16 items-center justify-between md:h-20">
+      <div className="container relative flex h-16 items-center justify-between md:h-20">
         <a
           href="#"
           onClick={(e) => handleNavClick(e, "#")}
           className="font-display text-2xl font-bold tracking-wider text-primary transition-colors hover:text-primary/90"
+          style={{ pointerEvents: "auto" }}
         >
           SEDO
         </a>
@@ -178,6 +220,7 @@ const Navbar = () => {
               href={l.href}
               onClick={(e) => handleNavClick(e, l.href)}
               className="nav-link-underline rounded-lg px-3 py-2 text-sm font-medium text-foreground/70 transition-all duration-200 hover:bg-secondary/50 hover:text-foreground"
+              style={{ pointerEvents: "auto" }}
             >
               {l.label}
             </a>
@@ -188,13 +231,14 @@ const Navbar = () => {
               <button
                 key={item}
                 type="button"
-                onClick={() => setLang(item)}
+                onClick={() => handleLanguageClick(item)}
                 className={`touch-manipulation rounded-lg px-2.5 py-1.5 text-xs font-bold uppercase transition-all ${
                   safeLang === item
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-foreground/70 hover:bg-secondary/60 hover:text-foreground"
                 }`}
                 aria-label={item.toUpperCase()}
+                style={{ pointerEvents: "auto" }}
               >
                 {item}
               </button>
@@ -205,6 +249,7 @@ const Navbar = () => {
             href="#location"
             onClick={(e) => handleNavClick(e, "#location")}
             className="ml-3 hidden items-center gap-2 rounded-xl border border-border/50 bg-card/70 px-4 py-2.5 text-sm font-semibold text-foreground transition-all hover:border-primary/50 hover:text-primary lg:inline-flex"
+            style={{ pointerEvents: "auto" }}
           >
             <MapPin className="h-4 w-4" />
             {t.findUs}
@@ -214,6 +259,7 @@ const Navbar = () => {
             href="#reservation"
             onClick={(e) => handleNavClick(e, "#reservation")}
             className="ml-2 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 hover:shadow-glow"
+            style={{ pointerEvents: "auto" }}
           >
             <ShoppingBag className="h-4 w-4" />
             {t.order}
@@ -224,6 +270,7 @@ const Navbar = () => {
             target="_blank"
             rel="noopener noreferrer"
             className="ml-2 inline-flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-300 transition-all hover:border-emerald-400/60 hover:bg-emerald-500/15"
+            style={{ pointerEvents: "auto" }}
           >
             {t.boltFood}
           </a>
@@ -231,15 +278,17 @@ const Navbar = () => {
 
         <button
           type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setOpen((prev) => !prev);
-          }}
-          className="relative z-[100002] touch-manipulation rounded-lg p-2 text-foreground transition-colors hover:bg-secondary/50 md:hidden"
+          onPointerUp={toggleMobileMenu}
+          onKeyDown={handleMenuKeyDown}
+          className="relative touch-manipulation rounded-lg p-2 text-foreground transition-colors hover:bg-secondary/50 md:hidden"
           aria-label={t.menuLabel}
           aria-expanded={open}
           aria-controls="mobile-navigation"
+          style={{
+            zIndex: 2147483647,
+            pointerEvents: "auto",
+            touchAction: "manipulation",
+          }}
         >
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
@@ -253,7 +302,13 @@ const Navbar = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.22, ease: "easeOut" }}
-            className="fixed inset-x-0 top-16 z-[100000] max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-border/50 bg-background/95 shadow-2xl backdrop-blur-xl md:hidden"
+            className="fixed inset-x-0 top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-border/50 bg-background/95 shadow-2xl backdrop-blur-xl md:hidden"
+            style={{
+              zIndex: 2147483646,
+              pointerEvents: "auto",
+              transform: "translateZ(0)",
+              WebkitTransform: "translateZ(0)",
+            }}
           >
             <div className="container flex flex-col gap-1 py-6">
               <div className="mb-4 flex items-center justify-center gap-2">
@@ -261,12 +316,13 @@ const Navbar = () => {
                   <button
                     key={item}
                     type="button"
-                    onClick={() => setLang(item)}
+                    onClick={() => handleLanguageClick(item)}
                     className={`touch-manipulation rounded-xl px-3 py-2 text-sm font-bold uppercase transition-all ${
                       safeLang === item
                         ? "bg-primary text-primary-foreground"
                         : "border border-border/50 bg-card text-foreground/70 hover:text-foreground"
                     }`}
+                    style={{ pointerEvents: "auto" }}
                   >
                     {item}
                   </button>
@@ -279,6 +335,7 @@ const Navbar = () => {
                   href={l.href}
                   onClick={(e) => handleNavClick(e, l.href)}
                   className="touch-manipulation rounded-xl px-4 py-3 text-lg text-foreground/80 transition-all hover:bg-secondary/50 hover:text-foreground"
+                  style={{ pointerEvents: "auto" }}
                 >
                   {l.label}
                 </a>
@@ -289,6 +346,7 @@ const Navbar = () => {
                   href="#location"
                   onClick={(e) => handleNavClick(e, "#location")}
                   className="touch-manipulation flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-card px-5 py-3.5 font-semibold text-foreground"
+                  style={{ pointerEvents: "auto" }}
                 >
                   <MapPin className="h-4 w-4" />
                   {t.findUs}
@@ -298,6 +356,7 @@ const Navbar = () => {
                   href="#reservation"
                   onClick={(e) => handleNavClick(e, "#reservation")}
                   className="touch-manipulation flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 font-semibold text-primary-foreground"
+                  style={{ pointerEvents: "auto" }}
                 >
                   <ShoppingBag className="h-4 w-4" />
                   {t.order}
@@ -309,6 +368,7 @@ const Navbar = () => {
                   rel="noopener noreferrer"
                   onClick={() => setOpen(false)}
                   className="touch-manipulation flex items-center justify-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-5 py-3.5 font-semibold text-emerald-300"
+                  style={{ pointerEvents: "auto" }}
                 >
                   {t.boltFood}
                 </a>
