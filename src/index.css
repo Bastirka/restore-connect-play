@@ -42,23 +42,55 @@
     --gradient-hero: linear-gradient(135deg, hsl(0 0% 0% / 0.7), hsl(0 0% 0% / 0.4));
     --gradient-cta: linear-gradient(145deg, hsl(0 72% 47%), hsl(0 65% 38%), hsl(0 72% 42%));
     --gradient-gold: linear-gradient(135deg, hsl(44 96% 48%), hsl(36 90% 42%));
+
     --shadow-card: 0 4px 24px hsl(0 0% 0% / 0.25);
     --shadow-glow: 0 0 40px hsl(0 72% 47% / 0.12);
   }
-}
 
-@layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
+
+  html {
+    width: 100%;
+    min-height: 100%;
+    scroll-behavior: smooth;
+    scroll-padding-top: 90px;
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background text-foreground;
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
   }
-  h1, h2, h3, h4 {
+
+  #root {
+    width: 100%;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
     font-family: var(--font-display);
+  }
+
+  button,
+  a {
+    touch-action: manipulation;
+  }
+
+  button {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -69,22 +101,22 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
   .bg-gradient-cta {
     background: var(--gradient-cta);
   }
+
   .bg-gradient-hero {
     background: var(--gradient-hero);
   }
+
   .shadow-card {
     box-shadow: var(--shadow-card);
   }
+
   .shadow-glow {
     box-shadow: var(--shadow-glow);
   }
-}
-
-html {
-  scroll-behavior: smooth;
 }
 
 /* Selection color */
@@ -95,16 +127,22 @@ html {
 
 /* Premium hover effects */
 .luxury-card-hover {
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
 .luxury-card-hover:hover {
   transform: scale(1.03);
   box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.4);
 }
 
 .luxury-btn-hover {
-  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), filter 0.25s ease;
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.25s ease;
 }
+
 .luxury-btn-hover:hover {
   transform: translateY(-2px);
   filter: brightness(1.1);
@@ -113,6 +151,7 @@ html {
 .luxury-img-hover {
   transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
 .luxury-img-hover:hover {
   transform: scale(1.05);
 }
@@ -126,11 +165,22 @@ select:focus {
 
 /* Shimmer loading effect */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
+
 .shimmer {
-  background: linear-gradient(90deg, transparent 25%, hsl(0 0% 100% / 0.06) 50%, transparent 75%);
+  background: linear-gradient(
+    90deg,
+    transparent 25%,
+    hsl(0 0% 100% / 0.06) 50%,
+    transparent 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }
@@ -141,11 +191,13 @@ select:focus {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
+
 .stagger-children > * {
   opacity: 0;
   animation: stagger-fade-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
@@ -155,6 +207,7 @@ select:focus {
 .nav-link-underline {
   position: relative;
 }
+
 .nav-link-underline::after {
   content: '';
   position: absolute;
@@ -166,29 +219,15 @@ select:focus {
   transform: scaleX(0);
   transform-origin: right;
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
 }
+
 .nav-link-underline:hover::after {
   transform: scaleX(1);
   transform-origin: left;
 }
 
 /* Android / Xiaomi mobile navbar fix */
-html,
-body,
-#root {
-  width: 100%;
-  min-height: 100%;
-  overflow-x: hidden;
-}
-
-html {
-  scroll-padding-top: 90px;
-}
-
-body {
-  -webkit-tap-highlight-color: transparent;
-}
-
 nav {
   position: fixed !important;
   z-index: 2147483647 !important;
@@ -196,15 +235,12 @@ nav {
   isolation: isolate;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 nav * {
   pointer-events: auto;
-}
-
-button,
-a {
-  touch-action: manipulation;
 }
 
 /* Mobile dropdown from Navbar.tsx */
@@ -217,6 +253,8 @@ a {
   pointer-events: auto !important;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* Sections should not hide under fixed navbar */
@@ -225,9 +263,26 @@ div[id] {
   scroll-margin-top: 90px;
 }
 
-/* Android sometimes lets animated/absolute layers block clicks */
-[data-radix-popper-content-wrapper],
-.nav-link-underline,
-.nav-link-underline::after {
-  pointer-events: auto;
+/* Prevent decorative layers from stealing taps */
+.hero-bg,
+.hero-video,
+.hero-overlay,
+.background-video,
+.decor,
+.blur,
+.glow {
+  pointer-events: none !important;
+}
+
+/* Safer Android scrolling */
+@supports (height: 100dvh) {
+  #mobile-navigation {
+    max-height: calc(100dvh - 4rem);
+  }
+}
+
+@supports not (height: 100dvh) {
+  #mobile-navigation {
+    max-height: calc(100vh - 4rem);
+  }
 }
